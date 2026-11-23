@@ -8,6 +8,7 @@ import {
   changePasswordSchema,
   createInvitationSchema,
   deactivateUserSchema,
+  demoLoginSchema,
   idParamSchema,
   inviteTokenParamSchema,
   listUsersQuerySchema,
@@ -49,6 +50,14 @@ export function createAuthModuleRouter(limiters) {
     ctrl.registerVisitorHandler
   );
   router.post('/auth/login', publicRoute(), authLimiter, validate({ body: loginSchema }), ctrl.loginHandler);
+  router.get('/auth/demo-login', publicRoute(), ctrl.demoLoginInfoHandler);
+  router.post(
+    '/auth/demo-login',
+    publicRoute(),
+    authLimiter,
+    validate({ body: demoLoginSchema }),
+    ctrl.demoLoginHandler
+  );
   router.post(
     '/auth/change-password',
     authorize('self.changePassword', 'user'),

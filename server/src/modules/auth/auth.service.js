@@ -29,6 +29,7 @@ import {
   getAllowedEmailDomains,
   resolveScopeHierarchy,
 } from '../organization/orgLookup.service.js';
+import { findDemoAccount, isDemoLoginEnabled, listDemoAccounts } from './demoAccounts.js';
 import Invitation from './invitation.model.js';
 import User from './user.model.js';
 
@@ -223,6 +224,39 @@ export async function loginUser({ email, password }, meta = {}) {
     user: toSafeUser(user),
     mustChangePassword: Boolean(user.mustChangePassword),
   };
+}
+
+export async function demoLogin(accountKey, meta = {}) {
+  if (!isDemoLoginEnabled()) {
+    throw AppError.notFound();
+  }
+  const account = findDemoAccount(accountKey);
+  if (!account) {
+    throw AppError.notFound();
+  }
+  const user = await User.findOne({ email: account.email, emailReleased: false });
+  if (!user || user.status !== USER_STATUSES.ACTIVE) {
+    // Demo account is not seeded in this database.
+    throw AppError.notFound();
+  }
+
+  user.lastLoginAt = new Date();
+  await user.save();
+
+  const { accessToken, refreshToken } = await issueSessionTokens(user, meta);
+  return {
+    accessToken,
+    refreshToken,
+    user: toSafeUser(user),
+    mustChangePassword: false,
+  };
+}
+
+export function getDemoLoginInfo() {
+  if (!isDemoLoginEnabled()) {
+    throw AppError.notFound();
+  }
+  return { accounts: listDemoAccounts() };
 }
 
 export async function changePassword(userId, { currentPassword, newPassword }, meta = {}) {

@@ -17,7 +17,7 @@ export function PublicLayout() {
           <Link to="/" className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white p-1">
               <img
-                src="/logo-placeholder.svg"
+                src="/mnu-logo.png"
                 alt={ar.common.universityName}
                 className="h-full w-full object-contain"
               />

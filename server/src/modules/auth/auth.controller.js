@@ -61,6 +61,31 @@ export async function loginHandler(req, res, next) {
   }
 }
 
+export async function demoLoginInfoHandler(req, res, next) {
+  try {
+    const data = authService.getDemoLoginInfo();
+    res.status(200).json({ data });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function demoLoginHandler(req, res, next) {
+  try {
+    const result = await authService.demoLogin(req.body.account, requestMeta(req));
+    res.cookie(REFRESH_COOKIE_NAME, result.refreshToken, REFRESH_COOKIE_OPTIONS);
+    res.status(200).json({
+      data: {
+        accessToken: result.accessToken,
+        user: result.user,
+        mustChangePassword: result.mustChangePassword,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function changePasswordHandler(req, res, next) {
   try {
     const result = await authService.changePassword(req.user.id, req.body, requestMeta(req));

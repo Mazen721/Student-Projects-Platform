@@ -39,6 +39,34 @@ export function useLoginMutation() {
   });
 }
 
+export function useDemoLoginInfoQuery() {
+  return useQuery({
+    queryKey: ['auth', 'demo-login'],
+    retry: false,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const res = await api.get('/auth/demo-login');
+      return res.data.data;
+    },
+  });
+}
+
+export function useDemoLoginMutation() {
+  const setSession = useAuthStore((s) => s.setSession);
+  return useMutation({
+    mutationFn: async (account) => {
+      const res = await api.post('/auth/demo-login', { account });
+      return res.data.data;
+    },
+    onSuccess: (data) => {
+      setSession({
+        accessToken: data.accessToken,
+        user: { ...data.user, mustChangePassword: data.mustChangePassword },
+      });
+    },
+  });
+}
+
 export function useRegisterStudentMutation() {
   const setSession = useAuthStore((s) => s.setSession);
   return useMutation({

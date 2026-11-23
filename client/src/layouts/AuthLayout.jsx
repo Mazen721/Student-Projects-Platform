@@ -11,7 +11,7 @@ export function AuthLayout() {
           className="flex h-16 w-16 items-center justify-center rounded-2xl border border-line bg-white p-2 shadow-sm"
         >
           <img
-            src="/logo-placeholder.svg"
+            src="/mnu-logo.png"
             alt={ar.common.universityName}
             className="h-full w-full object-contain"
           />

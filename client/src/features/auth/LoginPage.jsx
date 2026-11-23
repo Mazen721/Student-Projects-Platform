@@ -7,13 +7,32 @@ import { loginSchema } from '@spp/shared/schemas';
 import ar, { t } from '@/locales/ar';
 import { getApiErrorMessage } from '@/lib/errors';
 import { Button, Field, Input } from '@/components/ui';
-import { useLoginMutation } from './authApi';
+import { useDemoLoginInfoQuery, useDemoLoginMutation, useLoginMutation } from './authApi';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const loginMutation = useLoginMutation();
+  const demoInfoQuery = useDemoLoginInfoQuery();
+  const demoLoginMutation = useDemoLoginMutation();
   const [serverError, setServerError] = useState('');
+  const [pendingDemoKey, setPendingDemoKey] = useState('');
+
+  const demoAccounts = demoInfoQuery.data?.accounts || [];
+
+  async function onDemoLogin(accountKey) {
+    setServerError('');
+    setPendingDemoKey(accountKey);
+    try {
+      await demoLoginMutation.mutateAsync(accountKey);
+      const from = location.state?.from?.pathname || '/app';
+      navigate(from, { replace: true });
+    } catch (err) {
+      setServerError(getApiErrorMessage(err));
+    } finally {
+      setPendingDemoKey('');
+    }
+  }
 
   const {
     register,
@@ -103,6 +122,29 @@ export default function LoginPage() {
           {ar.nav.register}
         </Link>
       </p>
+
+      {demoAccounts.length > 0 && (
+        <div className="space-y-3 border-t border-line pt-5">
+          <div>
+            <h3 className="text-sm font-extrabold text-navy">{ar.auth.demoLoginTitle}</h3>
+            <p className="mt-1 text-xs text-muted">{ar.auth.demoLoginNote}</p>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {demoAccounts.map((account) => (
+              <Button
+                key={account.key}
+                type="button"
+                variant="outline"
+                loading={pendingDemoKey === account.key}
+                disabled={Boolean(pendingDemoKey) && pendingDemoKey !== account.key}
+                onClick={() => onDemoLogin(account.key)}
+              >
+                {account.title}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
