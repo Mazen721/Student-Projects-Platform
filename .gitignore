@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+coverage/
+
+# Environment files (keep .env.example)
+.env
+.env.*
+!.env.example
+
+# Logs & OS artifacts
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+
+# IDE
+.vscode/
+.idea/
+
+# Test & E2E artifacts
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/

@@ -1,0 +1,28 @@
+{
+  "name": "@spp/shared",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./constants": "./src/constants/index.js",
+    "./constants/*": "./src/constants/*.js",
+    "./schemas": "./src/schemas/index.js",
+    "./schemas/*": "./src/schemas/*.js",
+    "./machines": "./src/machines/index.js",
+    "./machines/*": "./src/machines/*.js",
+    "./calc": "./src/calc/index.js",
+    "./calc/*": "./src/calc/*.js",
+    "./text": "./src/text/index.js",
+    "./text/*": "./src/text/*.js",
+    "./locales/ar": "./src/locales/ar.js"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.5"
+  }
+}
