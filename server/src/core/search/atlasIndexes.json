@@ -1,0 +1,38 @@
+{
+  "indexes": [
+    {
+      "collection": "projects",
+      "name": "projects_search",
+      "definition": {
+        "mappings": {
+          "dynamic": false,
+          "fields": {
+            "title": { "type": "string", "analyzer": "lucene.arabic" },
+            "titleNormalized": { "type": "string", "analyzer": "lucene.arabic" },
+            "idea": { "type": "string", "analyzer": "lucene.arabic" },
+            "keywords": { "type": "string", "analyzer": "lucene.arabic" },
+            "field": { "type": "string", "analyzer": "lucene.keyword" },
+            "collegeId": { "type": "objectId" },
+            "departmentId": { "type": "objectId" },
+            "academicYearId": { "type": "objectId" },
+            "status": { "type": "token" },
+            "isPublished": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    {
+      "collection": "messages",
+      "name": "messages_search",
+      "definition": {
+        "mappings": {
+          "dynamic": false,
+          "fields": {
+            "textNormalized": { "type": "string", "analyzer": "lucene.arabic" },
+            "channelId": { "type": "objectId" }
+          }
+        }
+      }
+    }
+  ]
+}

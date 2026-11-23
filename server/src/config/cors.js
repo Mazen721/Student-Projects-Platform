@@ -1,4 +1,5 @@
 import { env } from './env.js';
+import { AppError } from '../core/errors/AppError.js';
 
 export function buildAllowedOrigins(clientUrlList = env.CLIENT_URL) {
   const entries = clientUrlList
@@ -22,6 +23,6 @@ export const corsOptions = {
       callback(null, true);
       return;
     }
-    callback(new Error('Origin not allowed by CORS'));
+    callback(AppError.forbidden());
   },
 };

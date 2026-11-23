@@ -5,9 +5,15 @@ import cookieParser from 'cookie-parser';
 import mongoSanitize from 'express-mongo-sanitize';
 import { corsOptions } from './config/cors.js';
 import { pingDb } from './config/db.js';
+import { createRateLimiters } from './core/rateLimits.js';
+import { assertAllRoutesGuarded, publicRoute } from './core/authz/authorize.js';
+import { createAuthTokenRouter } from './core/auth/token.routes.js';
+import { createUploadRouter } from './core/uploads/upload.routes.js';
+import { errorHandler, notFoundHandler } from './core/errors/errorHandler.js';
 
-export function createApp() {
+export function createApp({ mountModuleRoutes } = {}) {
   const app = express();
+  const limiters = createRateLimiters();
 
   app.set('trust proxy', 1);
   app.use(helmet());
@@ -15,8 +21,9 @@ export function createApp() {
   app.use(express.json({ limit: '1mb' }));
   app.use(cookieParser());
   app.use(mongoSanitize());
+  app.use(limiters.globalLimiter);
 
-  app.get('/api/health', async (_req, res) => {
+  app.get('/api/health', publicRoute(), async (_req, res) => {
     try {
       const dbUp = await pingDb();
       if (!dbUp) {
@@ -27,6 +34,18 @@ export function createApp() {
       return res.status(503).json({ status: 'degraded', db: 'down' });
     }
   });
+
+  app.use('/api/v1/auth', createAuthTokenRouter());
+  app.use('/api/v1/uploads', createUploadRouter(limiters.uploadSignLimiter));
+
+  if (typeof mountModuleRoutes === 'function') {
+    mountModuleRoutes(app, limiters);
+  }
+
+  assertAllRoutesGuarded(app);
+
+  app.use(notFoundHandler);
+  app.use(errorHandler);
 
   return app;
 }
