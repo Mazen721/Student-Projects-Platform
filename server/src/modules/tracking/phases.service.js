@@ -442,3 +442,55 @@ export async function addPhaseMilestone(projectId, phaseId, { title, dueDate }) 
   const added = phase.milestones[phase.milestones.length - 1];
   return { ...added, id: String(added._id) };
 }
+
+export async function checkProjectPhasesEligibility(projectId, { session = null } = {}) {
+  const phaseQuery = ProjectPhase.find({ projectId }).sort({ order: 1 });
+  const delivQuery = Deliverable.find({
+    projectId,
+    required: mongoose.trusted({ $ne: false }),
+  });
+  if (session) {
+    phaseQuery.session(session);
+    delivQuery.session(session);
+  }
+  const [phases, requiredDeliverables] = await Promise.all([phaseQuery.lean(), delivQuery.lean()]);
+
+  if (phases.length === 0) {
+    return { allPhasesApproved: false, missingPhases: [] };
+  }
+
+  const delivsByPhase = new Map();
+  for (const d of requiredDeliverables) {
+    const pid = String(d.phaseId);
+    if (!delivsByPhase.has(pid)) delivsByPhase.set(pid, []);
+    delivsByPhase.get(pid).push(d);
+  }
+
+  const missingPhases = [];
+  for (const phase of phases) {
+    const reqs = delivsByPhase.get(String(phase._id)) || [];
+    if (reqs.length === 0) {
+      if (!phase.completedBySupervisor) {
+        missingPhases.push({
+          phaseId: String(phase._id),
+          name: phase.name,
+          pendingCount: 1,
+        });
+      }
+      continue;
+    }
+    const pendingCount = reqs.filter((d) => d.latestStatus !== 'approved').length;
+    if (pendingCount > 0) {
+      missingPhases.push({
+        phaseId: String(phase._id),
+        name: phase.name,
+        pendingCount,
+      });
+    }
+  }
+
+  return {
+    allPhasesApproved: missingPhases.length === 0,
+    missingPhases,
+  };
+}

@@ -170,6 +170,12 @@ export default function CollegesPage() {
           >
             {ar.tracking.phaseTemplates}
           </Link>
+          <Link
+            to={`/app/organization/colleges/${row._id}/rubrics`}
+            className="inline-flex min-h-11 items-center rounded-xl border border-slate-300 px-3 text-xs font-bold text-navy hover:bg-slate-50"
+          >
+            {ar.evaluation.rubrics}
+          </Link>
           <Button
             size="sm"
             variant="outline"

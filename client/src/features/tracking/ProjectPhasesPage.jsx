@@ -36,6 +36,7 @@ import {
   useReviewSubmissionMutation,
   useUpdateStatusFlagMutation,
 } from './trackingApi';
+import { CommentThread } from '@/features/collaboration/CommentThread';
 
 function getDeliverableTone(status) {
   switch (status) {
@@ -184,6 +185,11 @@ function SubmissionHistoryModal({ projectId, deliverable, isPrimarySupervisor, o
               )}
             </div>
           ))}
+        </div>
+      )}
+      {deliverable?.id && (
+        <div className="mt-4">
+          <CommentThread targetType="deliverable" targetId={deliverable.id} />
         </div>
       )}
     </Modal>

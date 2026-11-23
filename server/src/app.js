@@ -14,6 +14,9 @@ import { createAuthModuleRouter } from './modules/auth/auth.routes.js';
 import { createOrganizationRouter } from './modules/organization/organization.routes.js';
 import { createProjectsRouter } from './modules/projects/projects.routes.js';
 import { createTrackingRouter } from './modules/tracking/tracking.routes.js';
+import { createCollaborationRouter } from './modules/collaboration/collaboration.routes.js';
+import { createEvaluationRouter } from './modules/evaluation/evaluation.routes.js';
+import { createShowcaseRouter } from './modules/showcase/showcase.routes.js';
 
 export function createApp({ mountModuleRoutes } = {}) {
   const app = express();
@@ -45,6 +48,9 @@ export function createApp({ mountModuleRoutes } = {}) {
   app.use('/api/v1', createOrganizationRouter(limiters));
   app.use('/api/v1', createProjectsRouter(limiters));
   app.use('/api/v1', createTrackingRouter(limiters));
+  app.use('/api/v1', createCollaborationRouter(limiters));
+  app.use('/api/v1', createEvaluationRouter(limiters));
+  app.use('/api/v1', createShowcaseRouter(limiters));
 
   if (typeof mountModuleRoutes === 'function') {
     mountModuleRoutes(app, limiters);

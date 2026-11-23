@@ -86,7 +86,7 @@ export async function listPublicColleges() {
     .select('_id name code')
     .sort({ name: 1 })
     .lean();
-  return colleges;
+  return colleges.map((c) => ({ ...c, id: String(c._id) }));
 }
 
 export async function listPublicCollegeDepartments(collegeId) {

@@ -106,6 +106,9 @@ function assignmentMatchesScope(assignment, requiredScope, scope, userId) {
       }
       return false;
     case AUTHZ_SCOPES.SELF:
+      if (scope.projectId) {
+        return false;
+      }
       if (scope.userId && toIdString(scope.userId) !== userId) {
         return false;
       }

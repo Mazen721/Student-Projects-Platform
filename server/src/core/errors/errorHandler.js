@@ -79,6 +79,7 @@ export function errorHandler(err, req, res, _next) {
       message: normalized.message,
     };
     if (normalized.rule) payload.rule = normalized.rule;
+    if (normalized.vars && Object.keys(normalized.vars).length > 0) payload.vars = normalized.vars;
     if (normalized.fields) payload.fields = normalized.fields;
     if (normalized.details) payload.details = normalized.details;
     return res.status(normalized.status).json({ error: payload });

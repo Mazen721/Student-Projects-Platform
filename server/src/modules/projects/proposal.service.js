@@ -6,7 +6,7 @@ import {
   TRANSFER_STATUSES,
   USER_STATUSES,
 } from '@spp/shared/constants';
-import { getCycleWindowDates, isProposalResubmitOpen, isRegistrationOpen } from '@spp/shared/calc';
+import { getCycleWindowDates, isProposalResubmitOpen, isRegistrationOpen, computeTrending } from '@spp/shared/calc';
 import { t } from '@spp/shared/locales/ar';
 import { proposalMachine } from '@spp/shared/machines';
 import { recordAudit } from '../../core/audit/audit.service.js';
@@ -458,6 +458,7 @@ export async function updateProjectProgress(
   };
   if (regressDefenseIfEligible) {
     update.$set.defenseState = 'not_eligible';
+    update.$unset = { supervisorSignOff: 1 };
   }
   const filter = regressDefenseIfEligible
     ? { _id: projectId, defenseState: 'eligible' }
@@ -466,11 +467,38 @@ export async function updateProjectProgress(
   let updated = await Project.findOneAndUpdate(filter, update, opts).select('progress defenseState').lean();
   if (!updated && regressDefenseIfEligible) {
     delete update.$set.defenseState;
+    delete update.$unset;
     updated = await Project.findOneAndUpdate({ _id: projectId }, update, opts)
       .select('progress defenseState')
       .lean();
   }
   return updated;
+}
+
+export async function getProjectForEvaluation(projectId, { session = null } = {}) {
+  const query = Project.findById(projectId).select(
+    '_id title slug status defenseState supervisorSignOff collegeId departmentId academicYearId academicYearLabel activeMemberIds team.members supervision supervisorIds'
+  );
+  if (session) query.session(session);
+  const project = await query.lean();
+  if (!project) {
+    throw AppError.notFound();
+  }
+  return project;
+}
+
+export async function updateProjectDefenseState(
+  projectId,
+  { defenseState, supervisorSignOff },
+  { session = null } = {}
+) {
+  const $set = {};
+  if (defenseState !== undefined) $set.defenseState = defenseState;
+  if (supervisorSignOff !== undefined) $set.supervisorSignOff = supervisorSignOff;
+  const opts = session ? { session, new: true } : { new: true };
+  return Project.findByIdAndUpdate(projectId, { $set }, opts)
+    .select('_id defenseState supervisorSignOff')
+    .lean();
 }
 
 export async function updateProjectBudget(projectId, budgetEstimate, { session = null } = {}) {
@@ -496,4 +524,89 @@ export async function listApprovedProjectsForReminders() {
   return Project.find({ status: PROPOSAL_STATUSES.APPROVED })
     .select('_id title activeMemberIds')
     .lean();
+}
+
+const SHOWCASE_PROJECT_SELECT =
+  '_id title slug idea problem scope field type beneficiaries keywords expectedOutcomes cover collegeId departmentId academicYearId academicYearLabel status team activeMemberIds supervision supervisorIds isPublished showcaseStats createdAt';
+
+export async function getProjectForShowcase(projectId, { session = null } = {}) {
+  const query = Project.findById(projectId).select(SHOWCASE_PROJECT_SELECT);
+  if (session) query.session(session);
+  const project = await query.lean();
+  if (!project) {
+    throw AppError.notFound();
+  }
+  return project;
+}
+
+export async function getPublishedProjectBySlug(slug) {
+  return Project.findOne({ slug, isPublished: true }).select(SHOWCASE_PROJECT_SELECT).lean();
+}
+
+export async function listPublishedProjectsForShowcase({ q = '', filters = {}, skip = 0, limit = 20, sort = { 'showcaseStats.trendingScore': -1, createdAt: -1 } } = {}) {
+  const effectiveFilters = { ...filters, isPublished: true };
+  return searchProjects(Project, {
+    q,
+    scopeFilter: {},
+    filters: effectiveFilters,
+    skip,
+    limit,
+    sort,
+  });
+}
+
+export async function listPublishedProjectsByIds(projectIds = []) {
+  const ids = [...new Set(projectIds.filter(Boolean).map(String))];
+  if (ids.length === 0) return [];
+  return Project.find({ _id: mongoose.trusted({ $in: ids }), isPublished: true })
+    .select(SHOWCASE_PROJECT_SELECT)
+    .lean();
+}
+
+export async function updateProjectShowcasePublishState(projectId, isPublished, { session = null } = {}) {
+  const opts = session ? { session, new: true } : { new: true };
+  return Project.findByIdAndUpdate(projectId, { $set: { isPublished: Boolean(isPublished) } }, opts)
+    .select('_id isPublished')
+    .lean();
+}
+
+export async function incrementProjectShowcaseStats(projectId, incFields = {}, { session = null } = {}) {
+  const $inc = {};
+  for (const [key, val] of Object.entries(incFields)) {
+    if (typeof val === 'number' && val !== 0) {
+      $inc[`showcaseStats.${key}`] = val;
+    }
+  }
+  if (Object.keys($inc).length === 0) return null;
+  const opts = session ? { session, new: true } : { new: true };
+  return Project.findByIdAndUpdate(projectId, { $inc }, opts)
+    .select('_id showcaseStats')
+    .lean();
+}
+
+export async function listPublishedProjectIdsForTrending() {
+  return Project.find({ isPublished: true })
+    .select('_id showcaseStats.votes7d showcaseStats.views7d')
+    .lean();
+}
+
+export async function bulkUpdateProjectTrendingStats(updates = []) {
+  if (updates.length === 0) return 0;
+  const ops = updates.map((entry) => ({
+    updateOne: {
+      filter: { _id: entry.projectId },
+      update: {
+        $set: {
+          'showcaseStats.votes7d': entry.votes7d,
+          'showcaseStats.views7d': entry.views7d,
+          'showcaseStats.trendingScore': computeTrending({
+            votes7d: entry.votes7d,
+            views7d: entry.views7d,
+          }),
+        },
+      },
+    },
+  }));
+  const res = await Project.bulkWrite(ops, { ordered: false });
+  return res.modifiedCount || 0;
 }

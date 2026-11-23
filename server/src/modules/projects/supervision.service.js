@@ -11,7 +11,7 @@ import { findUsersBasicByIds, listSupervisorsInScope } from '../auth/index.js';
 import { getAcademicYearInfo, getCollegeAndCurrentYear } from '../organization/index.js';
 import Project from './project.model.js';
 import SupervisorAssignment from './supervisorAssignment.model.js';
-import { getActorRoleName, hydrateProjects } from './projectShared.js';
+import { getActorRoleName, hydrateProjects, runProjectMembersChangedHooks } from './projectShared.js';
 
 function assertNoSupervisionOverlap({ primaryId, coSupervisorIds, mentorIds }) {
   const coSet = new Set((coSupervisorIds || []).map(String));
@@ -135,6 +135,7 @@ export async function assignSupervision(projectId, payload, { actor, ip }) {
       }
 
       const before = { ...project.supervision?.toObject?.() };
+      const previousSupIds = new Set((project.supervisorIds || []).map(String));
       project.supervision = {
         primaryId: nextPrimary || null,
         reviewerId: nextReviewer || null,
@@ -142,6 +143,9 @@ export async function assignSupervision(projectId, payload, { actor, ip }) {
         mentorIds: nextMentors,
       };
       await project.save({ session });
+      const nextSupSet = new Set((project.supervisorIds || []).map(String));
+      const removedSupIds = [...previousSupIds].filter((id) => !nextSupSet.has(id));
+      await runProjectMembersChangedHooks(project, { removedUserIds: removedSupIds, session });
 
       await recordSupervisorAssignments(
         project,

@@ -23,6 +23,7 @@ import {
   assertNoActiveProjectInYear,
   getActorRoleName,
   hydrateProjects,
+  runProjectMembersChangedHooks,
   syncActiveMembersArray,
   syncPartnerScopes,
 } from './projectShared.js';
@@ -281,6 +282,10 @@ export async function removeTeamMember(projectId, targetUserId, { reason }, { ac
       syncActiveMembersArray(project);
       await syncPartnerScopes(project, session);
       await project.save({ session });
+      await runProjectMembersChangedHooks(project, {
+        removedUserIds: [String(targetUserId)],
+        session,
+      });
 
       await ProjectMembership.updateOne(
         { userId: targetUserId, academicYearId: project.academicYearId, projectId: project._id, active: true },
@@ -394,6 +399,8 @@ export async function moveTeamMember(projectId, { userId, targetProjectId, reaso
       syncActiveMembersArray(target);
       await syncPartnerScopes(target, session);
       await target.save({ session });
+      await runProjectMembersChangedHooks(source, { removedUserIds: [String(userId)], session });
+      await runProjectMembersChangedHooks(target, { session });
 
       await ProjectMembership.updateOne(
         { userId, academicYearId: source.academicYearId, active: true },
@@ -548,5 +555,6 @@ export async function removeImpostorMemberships(userId, session, actorId) {
     syncActiveMembersArray(project);
     await syncPartnerScopes(project, session);
     await project.save({ session });
+    await runProjectMembersChangedHooks(project, { removedUserIds: [String(userId)], session });
   }
 }

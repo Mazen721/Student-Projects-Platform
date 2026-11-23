@@ -139,7 +139,12 @@ export const POLICIES = Object.freeze({
   ],
 
   // Collaboration
-  'channel.list': [{ roles: [UNIVERSITY_ADMIN, COLLEGE_ADMIN, DEPARTMENT_ADMIN, SUPERVISOR, STUDENT], scope: AUTHZ_SCOPES.SELF }],
+  'channel.list': [
+    { roles: STAFF_ADMINS, scope: AUTHZ_SCOPES.DEPARTMENT },
+    { relationship: 'teamMember' },
+    { relationship: 'anySupervisor' },
+    { roles: [SUPERVISOR, STUDENT], scope: AUTHZ_SCOPES.SELF },
+  ],
   'channel.createDirect': [
     { relationship: 'teamMember' },
     { relationship: 'anySupervisor' },
@@ -166,6 +171,10 @@ export const POLICIES = Object.freeze({
     { relationship: 'anySupervisor' },
   ],
   'media.write': [{ relationship: 'teamMember' }],
+  'mediaItem.remove': [
+    { roles: STAFF_ADMINS, scope: AUTHZ_SCOPES.DEPARTMENT },
+    { relationship: 'teamMember' },
+  ],
 
   // Evaluation
   'rubric.list': [{ roles: [UNIVERSITY_ADMIN, COLLEGE_ADMIN, DEPARTMENT_ADMIN, SUPERVISOR, COMMITTEE_MEMBER], scope: AUTHZ_SCOPES.COLLEGE }],
@@ -248,7 +257,7 @@ export const POLICIES = Object.freeze({
   'contact.decide': [{ relationship: 'leader' }],
   'challenge.list': [{ roles: ALL_ROLES, scope: AUTHZ_SCOPES.SELF }],
   'challenge.create': [{ roles: [INVESTOR], scope: AUTHZ_SCOPES.SELF }],
-  'challenge.remove': [{ roles: [UNIVERSITY_ADMIN, COLLEGE_ADMIN], scope: AUTHZ_SCOPES.UNIVERSITY }],
+  'challenge.remove': [{ roles: [UNIVERSITY_ADMIN, COLLEGE_ADMIN], scope: AUTHZ_SCOPES.COLLEGE }],
   'publicComment.create': [{ roles: ALL_ROLES, scope: AUTHZ_SCOPES.SELF }],
   'publicComment.report': [{ roles: ALL_ROLES, scope: AUTHZ_SCOPES.SELF }],
   'publicComment.moderate': [

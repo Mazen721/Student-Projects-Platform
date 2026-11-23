@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import {
   PROPOSAL_STATUSES,
   ROLES,
+  SCOPE_TYPES,
   TEAM_MEMBER_ROLES,
 } from '@spp/shared/constants';
 import { slugify } from '@spp/shared/text';
@@ -11,6 +12,76 @@ import { getCollegesAndDepartmentsMap } from '../organization/index.js';
 import Project from './project.model.js';
 import ProjectMembership from './projectMembership.model.js';
 import ProposalVersion from './proposalVersion.model.js';
+
+const membersChangedHooks = [];
+
+export function registerOnProjectMembersChangedHook(hookFn) {
+  if (typeof hookFn === 'function' && !membersChangedHooks.includes(hookFn)) {
+    membersChangedHooks.push(hookFn);
+  }
+}
+
+export async function runProjectMembersChangedHooks(project, { removedUserIds = [], session = null } = {}) {
+  for (const hook of membersChangedHooks) {
+    await hook(project, { removedUserIds, session });
+  }
+}
+
+export async function listAnnouncementProjectRecipients({ scopeType, scopeId, supervisorId }) {
+  const nonClosed = mongoose.trusted({
+    $nin: [PROPOSAL_STATUSES.REJECTED, PROPOSAL_STATUSES.WITHDRAWN, PROPOSAL_STATUSES.ARCHIVED],
+  });
+  const filter = { status: nonClosed };
+  if (scopeType === SCOPE_TYPES.COLLEGE && scopeId) {
+    filter.$or = [{ collegeId: scopeId }, { partnerCollegeIds: scopeId }];
+  } else if (scopeType === SCOPE_TYPES.DEPARTMENT && scopeId) {
+    filter.$or = [{ departmentId: scopeId }, { partnerDepartmentIds: scopeId }];
+  } else if (scopeType === 'supervision') {
+    filter.supervisorIds = supervisorId;
+  }
+
+  const projects = await Project.find(filter)
+    .select('activeMemberIds supervisorIds')
+    .lean();
+
+  const ids = new Set();
+  for (const p of projects) {
+    for (const mId of p.activeMemberIds || []) ids.add(String(mId));
+    if (scopeType !== 'supervision') {
+      for (const sId of p.supervisorIds || []) ids.add(String(sId));
+    }
+  }
+  return Array.from(ids);
+}
+
+export async function getUserProjectScopeSummary(userId) {
+  const projects = await Project.find({
+    status: mongoose.trusted({
+      $nin: [PROPOSAL_STATUSES.REJECTED, PROPOSAL_STATUSES.WITHDRAWN],
+    }),
+    $or: [{ activeMemberIds: userId }, { supervisorIds: userId }],
+  })
+    .select('collegeId departmentId partnerCollegeIds partnerDepartmentIds supervisorIds')
+    .lean();
+
+  const collegeIds = new Set();
+  const departmentIds = new Set();
+  const supervisorIds = new Set();
+
+  for (const p of projects) {
+    if (p.collegeId) collegeIds.add(String(p.collegeId));
+    if (p.departmentId) departmentIds.add(String(p.departmentId));
+    for (const c of p.partnerCollegeIds || []) collegeIds.add(String(c));
+    for (const d of p.partnerDepartmentIds || []) departmentIds.add(String(d));
+    for (const s of p.supervisorIds || []) supervisorIds.add(String(s));
+  }
+
+  return {
+    collegeIds: Array.from(collegeIds),
+    departmentIds: Array.from(departmentIds),
+    supervisorIds: Array.from(supervisorIds),
+  };
+}
 
 export const ADMIN_ROLES_SET = new Set([
   ROLES.UNIVERSITY_ADMIN,

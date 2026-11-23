@@ -32,6 +32,19 @@ const ProposalReviewPage = lazy(() => import('@/features/projects/ProposalReview
 const SupervisorLoadPage = lazy(() => import('@/features/projects/SupervisorLoadPage'));
 const IdeasBankPage = lazy(() => import('@/features/projects/IdeasBankPage'));
 const PhaseTemplatesPage = lazy(() => import('@/features/tracking/PhaseTemplatesPage'));
+const ProjectChatPage = lazy(() => import('@/features/collaboration/ProjectChatPage'));
+const NotificationCenter = lazy(() => import('@/features/collaboration/NotificationCenter'));
+const AnnouncementsPage = lazy(() => import('@/features/collaboration/AnnouncementsPage'));
+const RubricsPage = lazy(() => import('@/features/evaluation/RubricsPage'));
+const DefenseSchedulingPage = lazy(() => import('@/features/evaluation/DefenseSchedulingPage'));
+const GradingWorkspacePage = lazy(() => import('@/features/evaluation/GradingWorkspacePage'));
+const ReEvaluationQueuePage = lazy(() => import('@/features/evaluation/ReEvaluationQueuePage'));
+const PublicHomePage = lazy(() => import('@/features/showcase/PublicHomePage'));
+const CollegeShowcasePage = lazy(() => import('@/features/showcase/CollegeShowcasePage'));
+const ProjectMiniSitePage = lazy(() => import('@/features/showcase/ProjectMiniSitePage'));
+const CompetitionsPage = lazy(() => import('@/features/showcase/CompetitionsPage'));
+const FlaggedVotesPage = lazy(() => import('@/features/showcase/FlaggedVotesPage'));
+const InvestorWorkspacePage = lazy(() => import('@/features/showcase/InvestorWorkspacePage'));
 
 function LazyRoute({ children }) {
   return <Suspense fallback={<CardSkeleton />}>{children}</Suspense>;
@@ -63,18 +76,6 @@ function SessionBootstrap() {
   );
 }
 
-function HomePlaceholderPage() {
-  return (
-    <section className="rounded-2xl border border-line bg-white p-6 shadow-sm">
-      <header className="mb-4 rounded-xl bg-navy p-6 text-white">
-        <h1 className="text-2xl font-extrabold">{ar.showcase.homeTitle}</h1>
-        <p className="mt-2 text-sm text-gold-light">{ar.showcase.homeSubtitle}</p>
-      </header>
-      <p className="text-muted">{ar.common.universityName}</p>
-    </section>
-  );
-}
-
 function NotFoundPage() {
   return (
     <section className="mx-auto max-w-lg rounded-2xl border border-line bg-white p-8 text-center shadow-sm">
@@ -93,6 +94,7 @@ function NotFoundPage() {
 const ADMIN_ROLES = [ROLES.UNIVERSITY_ADMIN, ROLES.COLLEGE_ADMIN, ROLES.DEPARTMENT_ADMIN];
 const COLLEGE_OR_UNI_ADMIN = [ROLES.UNIVERSITY_ADMIN, ROLES.COLLEGE_ADMIN];
 const REVIEW_ROLES = [ROLES.SUPERVISOR, ...ADMIN_ROLES];
+const DEFENSE_ROLES = [ROLES.SUPERVISOR, ROLES.COMMITTEE_MEMBER, ...ADMIN_ROLES];
 const IDEAS_ROLES = [ROLES.STUDENT, ROLES.SUPERVISOR, ROLES.INVESTOR, ...ADMIN_ROLES];
 
 export const router = createBrowserRouter([
@@ -102,8 +104,10 @@ export const router = createBrowserRouter([
       {
         element: <PublicLayout />,
         children: [
-          { path: '/', element: <HomePlaceholderPage /> },
-          { path: '/competitions', element: <HomePlaceholderPage /> },
+          { path: '/', element: <LazyRoute><PublicHomePage /></LazyRoute> },
+          { path: '/colleges/:id/showcase', element: <LazyRoute><CollegeShowcasePage /></LazyRoute> },
+          { path: '/p/:slug', element: <LazyRoute><ProjectMiniSitePage /></LazyRoute> },
+          { path: '/competitions', element: <LazyRoute><CompetitionsPage /></LazyRoute> },
         ],
       },
       {
@@ -129,6 +133,11 @@ export const router = createBrowserRouter([
             children: [
               { index: true, element: <LazyRoute><HomeDashboardPage /></LazyRoute> },
               { path: 'profile', element: <LazyRoute><ProfilePage /></LazyRoute> },
+              { path: 'chat', element: <LazyRoute><ProjectChatPage /></LazyRoute> },
+              { path: 'notifications', element: <LazyRoute><NotificationCenter /></LazyRoute> },
+              { path: 'announcements', element: <LazyRoute><AnnouncementsPage /></LazyRoute> },
+              { path: 'investor', element: <LazyRoute><InvestorWorkspacePage /></LazyRoute> },
+              { path: 'challenges', element: <LazyRoute><InvestorWorkspacePage initialTab="challenges" /></LazyRoute> },
               { path: 'projects', element: <LazyRoute><ProjectsListPage /></LazyRoute> },
               { path: 'projects/:id', element: <LazyRoute><ProjectOverviewPage /></LazyRoute> },
               {
@@ -167,13 +176,26 @@ export const router = createBrowserRouter([
                     path: 'organization/colleges/:collegeId/phase-templates',
                     element: <LazyRoute><PhaseTemplatesPage /></LazyRoute>,
                   },
+                  {
+                    path: 'organization/colleges/:collegeId/rubrics',
+                    element: <LazyRoute><RubricsPage /></LazyRoute>,
+                  },
                   { path: 'users', element: <LazyRoute><UsersAdminPage /></LazyRoute> },
                   { path: 'audit-logs', element: <LazyRoute><AuditLogsPage /></LazyRoute> },
                 ],
               },
               {
+                element: <RequireRole allowedRoles={DEFENSE_ROLES} />,
+                children: [
+                  { path: 'defenses', element: <LazyRoute><DefenseSchedulingPage /></LazyRoute> },
+                  { path: 'defenses/:id/grading', element: <LazyRoute><GradingWorkspacePage /></LazyRoute> },
+                ],
+              },
+              {
                 element: <RequireRole allowedRoles={COLLEGE_OR_UNI_ADMIN} />,
                 children: [
+                  { path: 'reevaluations', element: <LazyRoute><ReEvaluationQueuePage /></LazyRoute> },
+                  { path: 'votes/flagged', element: <LazyRoute><FlaggedVotesPage /></LazyRoute> },
                   { path: 'imports', element: <LazyRoute><BulkImportPage /></LazyRoute> },
                 ],
               },

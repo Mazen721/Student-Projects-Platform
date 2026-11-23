@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   BarChart3,
   Bell,
+  Briefcase,
   Building2,
   ClipboardList,
   FileSpreadsheet,
@@ -9,16 +11,19 @@ import {
   Home,
   Lightbulb,
   LogOut,
+  Megaphone,
   Menu,
   MessageSquare,
+  ShieldAlert,
   Sparkles,
+  Trophy,
   User,
   Users,
 } from 'lucide-react';
 import { ROLES } from '@spp/shared/constants';
 import ar from '@/locales/ar';
 import { api } from '@/lib/api';
-import { disconnectSocket } from '@/lib/socket';
+import { connectSocket, disconnectSocket, getSocket } from '@/lib/socket';
 import { useAuthStore } from '@/stores/authStore';
 import { useUiStore } from '@/stores/uiStore';
 import { Avatar, Drawer, ToastContainer } from '@/components/ui';
@@ -43,9 +48,20 @@ function getRoleNavItems(roles = []) {
   }
 
   const secondary = [
+    { to: '/app/announcements', label: ar.chat.announcements, icon: Megaphone },
     { to: '/app/ideas', label: ar.nav.ideas, icon: Lightbulb },
+    { to: '/app/challenges', label: ar.showcase.challenges, icon: Briefcase },
+    { to: '/competitions', label: ar.nav.competitions, icon: Trophy },
     { to: '/app/profile', label: ar.nav.profile, icon: User },
   ];
+
+  if (roleNames.has(ROLES.INVESTOR)) {
+    secondary.unshift({
+      to: '/app/investor',
+      label: ar.showcase.investorWorkspaceTitle,
+      icon: Briefcase,
+    });
+  }
 
   if (
     roleNames.has(ROLES.UNIVERSITY_ADMIN) ||
@@ -54,6 +70,16 @@ function getRoleNavItems(roles = []) {
     roleNames.has(ROLES.SUPERVISOR)
   ) {
     secondary.push({ to: '/app/projects/reviews', label: ar.projects.reviewQueue, icon: ClipboardList });
+  }
+
+  if (
+    roleNames.has(ROLES.UNIVERSITY_ADMIN) ||
+    roleNames.has(ROLES.COLLEGE_ADMIN) ||
+    roleNames.has(ROLES.DEPARTMENT_ADMIN) ||
+    roleNames.has(ROLES.SUPERVISOR) ||
+    roleNames.has(ROLES.COMMITTEE_MEMBER)
+  ) {
+    secondary.push({ to: '/app/defenses', label: ar.evaluation.defenseCalendar, icon: ClipboardList });
   }
 
   if (
@@ -68,20 +94,55 @@ function getRoleNavItems(roles = []) {
   }
 
   if (roleNames.has(ROLES.UNIVERSITY_ADMIN) || roleNames.has(ROLES.COLLEGE_ADMIN)) {
+    secondary.push({ to: '/app/reevaluations', label: ar.evaluation.reevaluationQueue, icon: ClipboardList });
+    secondary.push({ to: '/app/votes/flagged', label: ar.showcase.flaggedVotesTitle, icon: ShieldAlert });
     secondary.push({ to: '/app/imports', label: ar.org.bulkImport, icon: FileSpreadsheet });
   }
 
   return { primary: items.slice(0, 4), secondary };
 }
 
-export function AppLayout({ unreadCount = 0, roleSwitcherSlot = null }) {
+export function AppLayout({ unreadCount: unreadCountProp, roleSwitcherSlot = null }) {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
+  const accessToken = useAuthStore((s) => s.accessToken);
   const roles = useAuthStore((s) => s.roles);
   const clearSession = useAuthStore((s) => s.clearSession);
   const moreDrawerOpen = useUiStore((s) => s.moreDrawerOpen);
   const setMoreDrawerOpen = useUiStore((s) => s.setMoreDrawerOpen);
   const socketReconnecting = useUiStore((s) => s.socketReconnecting);
+  const [liveUnread, setLiveUnread] = useState(0);
+  const unreadCount = unreadCountProp ?? liveUnread;
+
+  useEffect(() => {
+    if (!accessToken || unreadCountProp !== undefined) return undefined;
+    let active = true;
+    api
+      .get('/notifications', { params: { limit: 1 } })
+      .then((res) => {
+        if (active && typeof res.data?.unreadCount === 'number') {
+          setLiveUnread(res.data.unreadCount);
+        }
+      })
+      .catch(() => {});
+
+    const socket = getSocket() || connectSocket();
+    if (!socket) {
+      return () => {
+        active = false;
+      };
+    }
+    const onCount = (payload) => {
+      if (typeof payload?.unread === 'number') {
+        setLiveUnread(payload.unread);
+      }
+    };
+    socket.on('notification:count', onCount);
+    return () => {
+      active = false;
+      socket.off('notification:count', onCount);
+    };
+  }, [accessToken, unreadCountProp]);
 
   const { primary, secondary } = getRoleNavItems(roles);
   const allNavItems = [...primary, ...secondary];

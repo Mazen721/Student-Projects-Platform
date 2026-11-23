@@ -23,6 +23,11 @@ import { KanbanBoardPage } from '@/features/tracking/KanbanBoardPage';
 import { BomToolsPage } from '@/features/tracking/BomToolsPage';
 import { MeetingsPage } from '@/features/tracking/MeetingsPage';
 import { ProjectTimelinePage } from '@/features/tracking/ProjectTimelinePage';
+import ProjectChatPage from '@/features/collaboration/ProjectChatPage';
+import { MediaGalleryPage } from '@/features/collaboration/MediaGalleryPage';
+import { ProjectDefensePanel } from '@/features/evaluation/DefenseSchedulingPage';
+import { StudentGradePage } from '@/features/evaluation/StudentGradePage';
+import { MiniSiteBuilderPage } from '@/features/showcase/MiniSiteBuilderPage';
 import { useProjectQuery, useTransitionProposalMutation } from './projectsApi';
 import { getProposalStatusTone } from './statusTone';
 
@@ -78,6 +83,11 @@ export default function ProjectOverviewPage() {
           { value: 'bom', label: ar.tracking.bom },
           { value: 'meetings', label: ar.tracking.meetings },
           { value: 'timeline', label: ar.tracking.timeline },
+          { value: 'chat', label: ar.nav.chat },
+          { value: 'media', label: ar.chat.mediaGallery },
+          { value: 'defense', label: ar.evaluation.defense },
+          { value: 'grades', label: ar.evaluation.grades },
+          { value: 'showcase', label: ar.showcase.miniSiteTab },
         ]
       : []),
     { value: 'history', label: ar.projects.historyAndVersions },
@@ -213,6 +223,16 @@ export default function ProjectOverviewPage() {
       {activeTab === 'meetings' && <MeetingsPage project={project} />}
 
       {activeTab === 'timeline' && <ProjectTimelinePage projectId={project.id} />}
+
+      {activeTab === 'chat' && <ProjectChatPage project={project} />}
+
+      {activeTab === 'media' && <MediaGalleryPage project={project} />}
+
+      {activeTab === 'defense' && <ProjectDefensePanel project={project} />}
+
+      {activeTab === 'grades' && <StudentGradePage project={project} />}
+
+      {activeTab === 'showcase' && <MiniSiteBuilderPage project={project} />}
 
       {activeTab === 'history' && <ProposalHistoryPanel projectId={project.id} />}
 

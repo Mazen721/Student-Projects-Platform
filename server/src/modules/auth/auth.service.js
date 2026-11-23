@@ -23,6 +23,7 @@ import {
 import { AppError } from '../../core/errors/AppError.js';
 import { buildPageMeta, parsePagination } from '../../core/pagination.js';
 import { verifyUpload } from '../../core/uploads/verifyUpload.js';
+import { disconnectUserSockets } from '../../realtime/socket.js';
 import {
   assertActiveCollegeAndDepartment,
   getAllowedEmailDomains,
@@ -245,6 +246,7 @@ export async function changePassword(userId, { currentPassword, newPassword }, m
   user.tokenVersion += 1;
   await user.save();
   await revokeAllUserTokens(user._id);
+  disconnectUserSockets(user._id);
 
   const { accessToken, refreshToken } = await issueSessionTokens(user, meta);
   return { accessToken, refreshToken, user: toSafeUser(user) };
@@ -396,6 +398,8 @@ export async function deactivateUser(targetUserId, { reason, releaseIdentifiers 
       if (shouldRelease) {
         const { removeImpostorMemberships } = await import('../projects/index.js');
         await removeImpostorMemberships(target._id, session, actor.id);
+        const { invalidateImpostorVotes } = await import('../showcase/index.js');
+        await invalidateImpostorVotes(target._id, session);
       }
 
       await recordAudit({
@@ -414,6 +418,7 @@ export async function deactivateUser(targetUserId, { reason, releaseIdentifiers 
 
       updatedUser = toSafeUser(target);
     });
+    disconnectUserSockets(targetUserId);
     return updatedUser;
   } finally {
     await session.endSession();
@@ -459,6 +464,7 @@ export async function resetUserPassword(targetUserId, { actor, ip }) {
   target.tokenVersion += 1;
   await target.save();
   await revokeAllUserTokens(target._id);
+  disconnectUserSockets(target._id);
 
   await recordAudit({
     actorId: actor.id,
@@ -562,6 +568,7 @@ export async function revokeUserRole(targetUserId, assignmentId, { reason }, { a
         session,
       });
     });
+    disconnectUserSockets(targetUserId);
   } finally {
     await session.endSession();
   }
@@ -608,6 +615,60 @@ export async function createRoleInvitation({ role, scopeType, scopeId }, { actor
   };
 }
 
+const externalExaminerAcceptedHooks = [];
+
+export function registerOnExternalExaminerAcceptedHook(hookFn) {
+  if (typeof hookFn === 'function' && !externalExaminerAcceptedHooks.includes(hookFn)) {
+    externalExaminerAcceptedHooks.push(hookFn);
+  }
+}
+
+export async function createExternalExaminerInvitation({
+  defenseId,
+  collegeId,
+  departmentId,
+  name,
+  actor,
+  ip,
+}) {
+  const rawToken = crypto.randomBytes(32).toString('hex');
+  const tokenHash = hashOpaqueToken(rawToken);
+  const expiresAt = new Date(Date.now() + INVITE_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
+
+  const inv = await Invitation.create({
+    kind: INVITATION_KINDS.EXTERNAL_EXAMINER,
+    tokenHash,
+    role: ROLES.COMMITTEE_MEMBER,
+    scopeType: SCOPE_TYPES.DEFENSE,
+    scopeId: defenseId,
+    collegeId,
+    departmentId,
+    defenseId,
+    inviteeName: name,
+    createdBy: actor.id,
+    expiresAt,
+  });
+
+  await recordAudit({
+    actorId: actor.id,
+    actorRole: getActorTopAssignment(actor)?.role || '',
+    action: 'invitation.createExternalExaminer',
+    targetType: 'invitation',
+    targetId: inv._id,
+    scope: { collegeId, departmentId },
+    after: { defenseId, inviteeName: name, expiresAt },
+    ip,
+  });
+
+  return {
+    id: String(inv._id),
+    url: `/accept-invite/${rawToken}`,
+    expiresAt,
+    defenseId: String(defenseId),
+    inviteeName: name,
+  };
+}
+
 export async function getInvitationPreview(rawToken) {
   const tokenHash = hashOpaqueToken(rawToken);
   const inv = await Invitation.findOne({
@@ -619,6 +680,15 @@ export async function getInvitationPreview(rawToken) {
 
   if (!inv) {
     throw new AppError('INVITE_UNAVAILABLE');
+  }
+  if (inv.kind === INVITATION_KINDS.EXTERNAL_EXAMINER) {
+    return {
+      kind: inv.kind,
+      role: ROLES.COMMITTEE_MEMBER,
+      scopeType: SCOPE_TYPES.DEFENSE,
+      scopeLabel: inv.inviteeName || t('evaluation.externalExaminerLabel'),
+      expiresAt: inv.expiresAt,
+    };
   }
   const resolved = await resolveScopeHierarchy(inv.scopeType || SCOPE_TYPES.UNIVERSITY, inv.scopeId);
   return {
@@ -657,9 +727,22 @@ export async function acceptRoleInvitation(rawToken, payload, { authHeader, user
         { new: true, session }
       );
 
-      if (!inv || inv.kind !== INVITATION_KINDS.ROLE) {
+      if (
+        !inv ||
+        (inv.kind !== INVITATION_KINDS.ROLE && inv.kind !== INVITATION_KINDS.EXTERNAL_EXAMINER)
+      ) {
         throw new AppError('INVITE_UNAVAILABLE');
       }
+
+      const roleAssignment = {
+        role: inv.role || ROLES.COMMITTEE_MEMBER,
+        scopeType: inv.scopeType,
+        scopeId: inv.scopeId,
+        collegeId: inv.collegeId,
+        departmentId: inv.departmentId,
+        defenseId: inv.defenseId || null,
+        grantedBy: inv.createdBy,
+      };
 
       let user;
       if (existingUserId) {
@@ -667,14 +750,7 @@ export async function acceptRoleInvitation(rawToken, payload, { authHeader, user
         if (!user || user.status !== USER_STATUSES.ACTIVE) {
           throw AppError.forbidden();
         }
-        user.roles.push({
-          role: inv.role,
-          scopeType: inv.scopeType,
-          scopeId: inv.scopeId,
-          collegeId: inv.collegeId,
-          departmentId: inv.departmentId,
-          grantedBy: inv.createdBy,
-        });
+        user.roles.push(roleAssignment);
         if (!user.collegeId && inv.collegeId) user.collegeId = inv.collegeId;
         if (!user.departmentId && inv.departmentId) user.departmentId = inv.departmentId;
         await user.save({ session });
@@ -698,21 +774,18 @@ export async function acceptRoleInvitation(rawToken, payload, { authHeader, user
               accountType: ACCOUNT_TYPES.STAFF,
               collegeId: inv.collegeId,
               departmentId: inv.departmentId,
-              roles: [
-                {
-                  role: inv.role,
-                  scopeType: inv.scopeType,
-                  scopeId: inv.scopeId,
-                  collegeId: inv.collegeId,
-                  departmentId: inv.departmentId,
-                  grantedBy: inv.createdBy,
-                },
-              ],
+              roles: [roleAssignment],
             },
           ],
           { session }
         );
         user = created[0];
+      }
+
+      if (inv.kind === INVITATION_KINDS.EXTERNAL_EXAMINER && inv.defenseId) {
+        for (const hook of externalExaminerAcceptedHooks) {
+          await hook({ defenseId: inv.defenseId, userId: user._id, session });
+        }
       }
 
       inv.usedBy = user._id;

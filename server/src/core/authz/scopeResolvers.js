@@ -11,11 +11,25 @@ import LeadershipTransfer from '../../modules/projects/leadershipTransfer.model.
 import Project from '../../modules/projects/project.model.js';
 import TeamInvitation from '../../modules/projects/teamInvitation.model.js';
 import BOMItem from '../../modules/tracking/bomItem.model.js';
+import Deliverable from '../../modules/tracking/deliverable.model.js';
 import Meeting from '../../modules/tracking/meeting.model.js';
 import PhaseTemplate from '../../modules/tracking/phaseTemplate.model.js';
 import Submission from '../../modules/tracking/submission.model.js';
 import Task from '../../modules/tracking/task.model.js';
 import ToolItem from '../../modules/tracking/toolItem.model.js';
+import Channel from '../../modules/collaboration/channel.model.js';
+import Comment from '../../modules/collaboration/comment.model.js';
+import MediaAlbum from '../../modules/collaboration/mediaAlbum.model.js';
+import MediaItem from '../../modules/collaboration/mediaItem.model.js';
+import Message from '../../modules/collaboration/message.model.js';
+import Defense from '../../modules/evaluation/defense.model.js';
+import ReEvaluationRequest from '../../modules/evaluation/reevaluationRequest.model.js';
+import Rubric from '../../modules/evaluation/rubric.model.js';
+import Challenge from '../../modules/showcase/challenge.model.js';
+import Competition from '../../modules/showcase/competition.model.js';
+import ContactRequest from '../../modules/showcase/contactRequest.model.js';
+import PublicComment from '../../modules/showcase/publicComment.model.js';
+import Vote from '../../modules/showcase/vote.model.js';
 import { hashOpaqueToken } from '../auth/tokens.js';
 import { AppError } from '../errors/AppError.js';
 
@@ -203,6 +217,199 @@ registerScopeResolver('meeting', async (req) => {
   const meeting = await Meeting.findById(id).select('projectId').lean();
   if (!meeting) return null;
   return resolveProjectById(req, meeting.projectId);
+});
+
+registerScopeResolver('channel', async (req) => {
+  const id = assertObjectId(req.params?.channelId || req.params?.id, 'channelId');
+  const channel = await Channel.findById(id)
+    .select('kind projectId memberIds collegeId departmentId')
+    .lean();
+  if (!channel) return null;
+  const projectScope = channel.projectId
+    ? (await resolveProjectById(req, channel.projectId)) || {}
+    : {};
+  return {
+    ...projectScope,
+    channelId: channel._id,
+    kind: channel.kind,
+    channelMemberIds: channel.memberIds || [],
+    collegeId: projectScope.collegeId ?? channel.collegeId ?? null,
+    departmentId: projectScope.departmentId ?? channel.departmentId ?? null,
+  };
+});
+
+registerScopeResolver('message', async (req) => {
+  const id = assertObjectId(req.params?.messageId || req.params?.id, 'messageId');
+  const msg = await Message.findById(id).select('channelId').lean();
+  if (!msg) return null;
+  const channel = await Channel.findById(msg.channelId)
+    .select('projectId collegeId departmentId kind')
+    .lean();
+  if (!channel) return null;
+  if (channel.projectId) {
+    const projectScope = await resolveProjectById(req, channel.projectId);
+    return projectScope ? { ...projectScope, kind: channel.kind } : null;
+  }
+  return {
+    collegeId: channel.collegeId ?? null,
+    departmentId: channel.departmentId ?? null,
+    kind: channel.kind,
+  };
+});
+
+const COMMENT_TARGET_MODELS = {
+  submission: Submission,
+  deliverable: Deliverable,
+  task: Task,
+};
+
+registerScopeResolver('commentTarget', async (req) => {
+  const targetType = req.query?.targetType || req.body?.targetType;
+  const TargetModel = COMMENT_TARGET_MODELS[targetType];
+  if (!TargetModel) {
+    throw new AppError('VALIDATION_ERROR', {
+      fields: [{ path: 'targetType', code: 'validation.invalidEnum', message: t('validation.invalidEnum') }],
+    });
+  }
+  const targetId = assertObjectId(req.query?.targetId || req.body?.targetId, 'targetId');
+  const target = await TargetModel.findById(targetId).select('projectId').lean();
+  if (!target) return null;
+  return resolveProjectById(req, target.projectId);
+});
+
+registerScopeResolver('comment', async (req) => {
+  const id = assertObjectId(req.params?.id, 'id');
+  const comment = await Comment.findById(id).select('projectId').lean();
+  if (!comment) return null;
+  return resolveProjectById(req, comment.projectId);
+});
+
+registerScopeResolver('album', async (req) => {
+  const id = assertObjectId(req.params?.albumId || req.params?.id, 'albumId');
+  const album = await MediaAlbum.findById(id).select('projectId').lean();
+  if (!album) return null;
+  return resolveProjectById(req, album.projectId);
+});
+
+registerScopeResolver('mediaItem', async (req) => {
+  const id = assertObjectId(req.params?.itemId || req.params?.id, 'itemId');
+  const item = await MediaItem.findById(id).select('projectId').lean();
+  if (!item) return null;
+  return resolveProjectById(req, item.projectId);
+});
+
+registerScopeResolver('rubric', async (req) => {
+  const id = assertObjectId(req.params?.id, 'id');
+  const rubric = await Rubric.findById(id).select('collegeId').lean();
+  if (!rubric) return null;
+  return { collegeId: rubric.collegeId };
+});
+
+registerScopeResolver('defense', async (req) => {
+  const id = assertObjectId(req.params?.id || req.params?.defenseId || req.body?.defenseId, 'defenseId');
+  const defense = await Defense.findById(id)
+    .select('projectId state chairId examinerIds')
+    .lean();
+  if (!defense) return null;
+  const projectScope = await resolveProjectById(req, defense.projectId);
+  if (!projectScope) return null;
+  return {
+    ...projectScope,
+    defenseId: defense._id,
+    defenseState: defense.state,
+    chairId: defense.chairId,
+    examinerIds: defense.examinerIds || [],
+  };
+});
+
+registerScopeResolver('grade', async (req) => {
+  const projectScope = await resolveProjectById(req, assertObjectId(req.params?.id, 'id'));
+  if (!projectScope) return null;
+  const studentId = assertObjectId(req.params?.studentId, 'studentId');
+  return {
+    ...projectScope,
+    studentId,
+  };
+});
+
+registerScopeResolver('reevaluation', async (req) => {
+  const id = assertObjectId(req.params?.id, 'id');
+  const reeval = await ReEvaluationRequest.findById(id)
+    .select('collegeId departmentId projectId')
+    .lean();
+  if (!reeval) return null;
+  return {
+    collegeId: reeval.collegeId,
+    departmentId: reeval.departmentId,
+    projectId: reeval.projectId,
+  };
+});
+
+registerScopeResolver('publishedProject', async (req) => {
+  const id = assertObjectId(req.params?.id, 'id');
+  const project = await Project.findById(id)
+    .select('collegeId departmentId isPublished')
+    .lean();
+  if (!project || !project.isPublished) return null;
+  return {
+    publishedProjectId: project._id,
+    collegeId: project.collegeId,
+    departmentId: project.departmentId,
+  };
+});
+
+registerScopeResolver('competition', async (req) => {
+  const id = assertObjectId(req.params?.id, 'id');
+  const competition = await Competition.findById(id)
+    .select('collegeId departmentId scopeType')
+    .lean();
+  if (!competition) return null;
+  return {
+    competitionId: competition._id,
+    collegeId: competition.collegeId ?? null,
+    departmentId: competition.departmentId ?? null,
+  };
+});
+
+registerScopeResolver('vote', async (req) => {
+  const id = assertObjectId(req.params?.id, 'id');
+  const vote = await Vote.findById(id).select('collegeId departmentId').lean();
+  if (!vote) return null;
+  return {
+    voteId: vote._id,
+    collegeId: vote.collegeId ?? null,
+    departmentId: vote.departmentId ?? null,
+  };
+});
+
+registerScopeResolver('contactRequest', async (req) => {
+  const id = assertObjectId(req.params?.id, 'id');
+  const reqDoc = await ContactRequest.findById(id).select('projectId').lean();
+  if (!reqDoc) return null;
+  return resolveProjectById(req, reqDoc.projectId);
+});
+
+registerScopeResolver('challenge', async (req) => {
+  const id = assertObjectId(req.params?.id, 'id');
+  const challenge = await Challenge.findById(id).select('investorId').lean();
+  if (!challenge) return null;
+  return {
+    challengeId: challenge._id,
+    ownerId: challenge.investorId,
+  };
+});
+
+registerScopeResolver('publicComment', async (req) => {
+  const id = assertObjectId(req.params?.id, 'id');
+  const comment = await PublicComment.findById(id).select('projectId').lean();
+  if (!comment) return null;
+  const projectScope = await resolveProjectById(req, comment.projectId);
+  if (!projectScope) return null;
+  const { projectId: commentProjectId, ...restScope } = projectScope;
+  return {
+    ...restScope,
+    commentProjectId,
+  };
 });
 
 export async function resolveResourceScope(resource, req) {

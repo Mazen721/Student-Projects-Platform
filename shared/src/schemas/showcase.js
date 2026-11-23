@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   MAX_PUBLIC_COMMENT_LENGTH,
   PROJECT_FIELD_VALUES,
+  PROJECT_TYPE_VALUES,
   SHOWCASE_TEMPLATE_VALUES,
   SHOWCASE_THEME_VALUES,
   VOTER_RESTRICTION_VALUES,
@@ -125,6 +126,7 @@ export const listPublicProjectsQuerySchema = paginationQuerySchema.extend({
   collegeId: objectIdSchema.optional(),
   departmentId: objectIdSchema.optional(),
   field: z.enum(PROJECT_FIELD_VALUES, { message: 'validation.invalidEnum' }).optional(),
+  type: z.enum(PROJECT_TYPE_VALUES, { message: 'validation.invalidEnum' }).optional(),
   academicYearId: objectIdSchema.optional(),
   sort: z.enum(['trending', 'votes', 'recent'], { message: 'validation.invalidEnum' }).default('trending'),
 });

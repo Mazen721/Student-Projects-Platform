@@ -8,11 +8,29 @@ import { verifyAccessToken } from '../core/auth/tokens.js';
 import { can } from '../core/authz/can.js';
 import { resolveResourceScope } from '../core/authz/scopeResolvers.js';
 import { setNotificationSocket } from '../core/notifications/notify.service.js';
+import { registerChatHandlers } from './chat.handlers.js';
 
-const customHandlerRegistrars = [];
+const customHandlerRegistrars = [registerChatHandlers];
+let activeIo = null;
 
 export function registerSocketHandlers(registrar) {
-  customHandlerRegistrars.push(registrar);
+  if (!customHandlerRegistrars.includes(registrar)) {
+    customHandlerRegistrars.push(registrar);
+  }
+}
+
+export function getSocketServer() {
+  return activeIo;
+}
+
+export function emitToChannel(channelId, event, payload) {
+  if (!activeIo || !channelId) return;
+  activeIo.to(`channel:${String(channelId)}`).emit(event, payload);
+}
+
+export function emitToUser(userId, event, payload) {
+  if (!activeIo || !userId) return;
+  activeIo.to(`user:${String(userId)}`).emit(event, payload);
 }
 
 function makeSocketError(code) {
@@ -88,16 +106,22 @@ export function initSocket(httpServer) {
     }
   });
 
+  activeIo = io;
   setNotificationSocket(io);
   return io;
 }
 
-export function disconnectUserSockets(io, userId) {
+export function disconnectUserSockets(userIdOrIo, maybeUserId) {
+  const io = maybeUserId ? userIdOrIo : activeIo;
+  const userId = maybeUserId || userIdOrIo;
   if (!io || !userId) return;
   io.in(`user:${String(userId)}`).disconnectSockets(true);
 }
 
-export function evictUserFromChannel(io, userId, channelId) {
+export function evictUserFromChannel(userIdOrIo, channelIdOrUserId, maybeChannelId) {
+  const io = maybeChannelId ? userIdOrIo : activeIo;
+  const userId = maybeChannelId ? channelIdOrUserId : userIdOrIo;
+  const channelId = maybeChannelId || channelIdOrUserId;
   if (!io || !userId || !channelId) return;
   io.in(`user:${String(userId)}`).socketsLeave(`channel:${String(channelId)}`);
 }

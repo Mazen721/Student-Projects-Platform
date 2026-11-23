@@ -5,7 +5,9 @@ import { AppError } from '../../core/errors/AppError.js';
 import { findUsersBasicByIds } from '../auth/index.js';
 import { getProjectForTracking, updateProjectBudget } from '../projects/index.js';
 import BOMItem from './bomItem.model.js';
+import Deliverable from './deliverable.model.js';
 import Meeting from './meeting.model.js';
+import Submission from './submission.model.js';
 import Task from './task.model.js';
 import { logTimelineEvent } from './timeline.service.js';
 import ToolItem from './toolItem.model.js';
@@ -281,4 +283,18 @@ export async function convertActionItemToTask(meetingId, index, { actor }) {
   } finally {
     await session.endSession();
   }
+}
+
+const TARGET_MODEL_MAP = {
+  submission: Submission,
+  deliverable: Deliverable,
+  task: Task,
+};
+
+export async function getCommentTargetProjectId(targetType, targetId) {
+  const Model = TARGET_MODEL_MAP[targetType];
+  if (!Model) throw AppError.notFound();
+  const doc = await Model.findById(targetId).select('projectId').lean();
+  if (!doc) throw AppError.notFound();
+  return String(doc.projectId);
 }

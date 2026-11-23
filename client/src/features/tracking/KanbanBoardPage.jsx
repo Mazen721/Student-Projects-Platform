@@ -8,7 +8,8 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import { Plus, Trash2 } from 'lucide-react';
+import { MessageSquare, Plus, Trash2 } from 'lucide-react';
+import { CommentThread } from '@/features/collaboration/CommentThread';
 import { PROPOSAL_STATUSES, TASK_COLUMN_VALUES } from '@spp/shared/constants';
 import ar, { t } from '@/locales/ar';
 import { getApiErrorMessage } from '@/lib/errors';
@@ -33,7 +34,7 @@ import {
   useUpdateTaskMutation,
 } from './trackingApi';
 
-function TaskCard({ task, canWrite, onMove, onDelete }) {
+function TaskCard({ task, canWrite, onMove, onDelete, onOpenComments }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task.id,
     disabled: !canWrite,
@@ -58,16 +59,26 @@ function TaskCard({ task, canWrite, onMove, onDelete }) {
         >
           {task.title}
         </p>
-        {canWrite && (
+        <div className="flex items-center gap-1">
           <Button
             size="sm"
             variant="ghost"
-            aria-label={ar.common.delete}
-            onClick={() => onDelete(task.id)}
+            aria-label={ar.chat.commentsTitle}
+            onClick={() => onOpenComments(task)}
           >
-            <Trash2 className="h-4 w-4 text-[#b91c1c]" aria-hidden="true" />
+            <MessageSquare className="h-4 w-4 text-navy" aria-hidden="true" />
           </Button>
-        )}
+          {canWrite && (
+            <Button
+              size="sm"
+              variant="ghost"
+              aria-label={ar.common.delete}
+              onClick={() => onDelete(task.id)}
+            >
+              <Trash2 className="h-4 w-4 text-[#b91c1c]" aria-hidden="true" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {task.description && <p className="text-xs text-muted">{task.description}</p>}
@@ -96,7 +107,7 @@ function TaskCard({ task, canWrite, onMove, onDelete }) {
   );
 }
 
-function KanbanColumn({ columnKey, tasks, canWrite, onMove, onDelete }) {
+function KanbanColumn({ columnKey, tasks, canWrite, onMove, onDelete, onOpenComments }) {
   const { setNodeRef, isOver } = useDroppable({ id: columnKey });
 
   return (
@@ -122,6 +133,7 @@ function KanbanColumn({ columnKey, tasks, canWrite, onMove, onDelete }) {
               canWrite={canWrite}
               onMove={onMove}
               onDelete={onDelete}
+              onOpenComments={onOpenComments}
             />
           ))}
         </div>
@@ -139,6 +151,7 @@ export function KanbanBoardPage({ project }) {
   const deleteTask = useDeleteTaskMutation();
 
   const [modalOpen, setModalOpen] = useState(false);
+  const [commentTask, setCommentTask] = useState(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [column, setColumn] = useState('todo');
@@ -225,6 +238,7 @@ export function KanbanBoardPage({ project }) {
                 canWrite={canWrite}
                 onMove={moveTask}
                 onDelete={removeTask}
+                onOpenComments={setCommentTask}
               />
             ))}
           </div>
@@ -277,6 +291,14 @@ export function KanbanBoardPage({ project }) {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      <Modal
+        open={Boolean(commentTask)}
+        onClose={() => setCommentTask(null)}
+        title={commentTask?.title || ar.chat.commentsTitle}
+      >
+        {commentTask && <CommentThread targetType="task" targetId={commentTask.id} />}
       </Modal>
     </div>
   );

@@ -1,6 +1,13 @@
 import mongoose from 'mongoose';
-import { ACADEMIC_YEAR_STATUSES, ORG_STATUSES, SCOPE_TYPES } from '@spp/shared/constants';
+import {
+  ACADEMIC_YEAR_STATUSES,
+  DEFAULT_MIN_VOTE_ACCOUNT_AGE_HOURS,
+  DEFAULT_VOTE_BURST_PER_IP_10M,
+  ORG_STATUSES,
+  SCOPE_TYPES,
+} from '@spp/shared/constants';
 import { t } from '@spp/shared/locales/ar';
+import { recordAudit } from '../../core/audit/audit.service.js';
 import { AppError } from '../../core/errors/AppError.js';
 import AcademicYear from './academicYear.model.js';
 import College from './college.model.js';
@@ -125,4 +132,50 @@ export async function getCollegesAndDepartmentsMap(collegeIds = [], departmentId
     collegeMap: new Map(colleges.map((c) => [String(c._id), c])),
     departmentMap: new Map(departments.map((d) => [String(d._id), d])),
   };
+}
+
+export async function getUniversityBranding() {
+  const uni = await University.findOne().select('name logo').lean();
+  return {
+    name: uni?.name || t('common.universityName'),
+    logo: uni?.logo || null,
+  };
+}
+
+export async function getUniversityShowcaseConfig() {
+  const uni = await University.findOne()
+    .select('name logo settings.minVoteAccountAgeHours settings.voteBurstPerIp10m settings.featuredProjectIds')
+    .lean();
+  return {
+    id: uni?._id ? String(uni._id) : null,
+    name: uni?.name || t('common.universityName'),
+    logo: uni?.logo || null,
+    minVoteAccountAgeHours:
+      uni?.settings?.minVoteAccountAgeHours ?? DEFAULT_MIN_VOTE_ACCOUNT_AGE_HOURS,
+    voteBurstPerIp10m: uni?.settings?.voteBurstPerIp10m ?? DEFAULT_VOTE_BURST_PER_IP_10M,
+    featuredProjectIds: (uni?.settings?.featuredProjectIds || []).map(String),
+  };
+}
+
+export async function setUniversityFeaturedProjectIds(projectIds, { actor, ip }) {
+  let uni = await University.findOne();
+  if (!uni) {
+    uni = new University({ name: t('common.universityName') });
+  }
+  const before = (uni.settings?.featuredProjectIds || []).map(String);
+  uni.settings.featuredProjectIds = projectIds;
+  await uni.save();
+
+  await recordAudit({
+    actorId: actor.id,
+    actorRole: actor?.roles?.[0]?.role || '',
+    action: 'showcase.feature',
+    targetType: 'university',
+    targetId: uni._id,
+    before: { featuredProjectIds: before },
+    after: { featuredProjectIds: projectIds.map(String) },
+    ip,
+  });
+
+  return (uni.settings.featuredProjectIds || []).map(String);
 }

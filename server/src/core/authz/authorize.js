@@ -1,3 +1,4 @@
+import { USER_STATUSES } from '@spp/shared/constants';
 import { authenticate } from '../auth/authenticate.js';
 import { AppError } from '../errors/AppError.js';
 import { can } from './can.js';
@@ -41,6 +42,12 @@ export function authorize(action, resource) {
       }
 
       if (!can(effectiveUser, action, scope)) {
+        if (
+          effectiveUser.status === USER_STATUSES.PENDING &&
+          can({ ...effectiveUser, status: USER_STATUSES.ACTIVE }, action, scope)
+        ) {
+          throw new AppError('ACCOUNT_PENDING');
+        }
         throw isCollectionLevel ? AppError.forbidden() : AppError.notFound();
       }
 

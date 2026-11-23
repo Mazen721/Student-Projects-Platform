@@ -95,6 +95,31 @@ function filterByCollegeOrDepartment(assignments) {
   return clauses.length === 1 ? clauses[0] : { $or: clauses };
 }
 
+function filterForDefenses(assignments, userId) {
+  const clauses = [];
+  for (const assignment of assignments) {
+    if (assignment.role === ROLES.UNIVERSITY_ADMIN) return {};
+    if (assignment.role === ROLES.COLLEGE_ADMIN && (assignment.collegeId || assignment.scopeId)) {
+      clauses.push({ collegeId: toIdString(assignment.collegeId ?? assignment.scopeId) });
+    } else if (assignment.role === ROLES.DEPARTMENT_ADMIN && (assignment.departmentId || assignment.scopeId)) {
+      clauses.push({ departmentId: toIdString(assignment.departmentId ?? assignment.scopeId) });
+    } else if (assignment.role === ROLES.SUPERVISOR) {
+      clauses.push({ supervisorIds: userId }, { examinerIds: userId });
+    } else if (assignment.role === ROLES.COMMITTEE_MEMBER) {
+      if (assignment.defenseId || (assignment.scopeType === 'defense' && assignment.scopeId)) {
+        clauses.push({
+          _id: toIdString(assignment.defenseId ?? assignment.scopeId),
+          state: mongoose.trusted({ $ne: 'finalized' }),
+        });
+      } else {
+        clauses.push({ examinerIds: userId });
+      }
+    }
+  }
+  if (clauses.length === 0) return { _id: null };
+  return clauses.length === 1 ? clauses[0] : { $or: clauses };
+}
+
 export function buildScopeFilter(user, action) {
   const userId = toIdString(user?._id ?? user?.id);
   const assignments = Array.isArray(user?.roles) ? user.roles : [];
@@ -102,6 +127,9 @@ export function buildScopeFilter(user, action) {
 
   if (action.startsWith('project.')) {
     return filterForProjects(assignments, userId);
+  }
+  if (action === 'defense.list') {
+    return filterForDefenses(assignments, userId);
   }
   if (action === 'idea.list') {
     const primary = getEffectiveAssignment(user);

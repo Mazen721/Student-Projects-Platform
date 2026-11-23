@@ -2,6 +2,8 @@ import cron from 'node-cron';
 import pino from 'pino';
 import { env } from '../config/env.js';
 import { runDeadlineReminders } from './deadlineReminders.js';
+import { runModificationsOverdueJob } from './modificationsOverdue.js';
+import { runTrendingJob } from './trending.js';
 import JobLock from './jobLock.model.js';
 
 const logger = pino({ level: env.NODE_ENV === 'production' ? 'info' : 'debug' });
@@ -34,7 +36,17 @@ export function startScheduler() {
     () => runWithLock('deadlineReminders', () => runDeadlineReminders()),
     { timezone: 'Africa/Cairo' }
   );
-  tasks.push(deadlineTask);
+  const modificationsTask = cron.schedule(
+    '15 8 * * *',
+    () => runWithLock('modificationsOverdue', () => runModificationsOverdueJob()),
+    { timezone: 'Africa/Cairo' }
+  );
+  const trendingTask = cron.schedule(
+    '0 * * * *',
+    () => runWithLock('trending', () => runTrendingJob()),
+    { timezone: 'Africa/Cairo' }
+  );
+  tasks.push(deadlineTask, modificationsTask, trendingTask);
 }
 
 export function stopScheduler() {
