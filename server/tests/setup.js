@@ -18,6 +18,7 @@ let replSet;
 beforeAll(async () => {
   replSet = await MongoMemoryReplSet.create({
     replSet: { count: 1, storageEngine: 'wiredTiger' },
+    instanceOpts: [{ launchTimeout: 30000 }],
   });
   const uri = replSet.getUri();
   process.env.MONGO_URI = uri;

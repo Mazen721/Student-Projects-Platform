@@ -287,16 +287,16 @@ description: "Actionable, dependency-ordered task list for منصة مشاريع
 
 **Purpose**: Wire scheduled jobs and Atlas Search indexes, execute full authorization-matrix, E2E, WCAG 2.1 AA (`360×740` / `390×844`), and zero-English audits, and configure production deployment for Vercel (client) and Railway (server).
 
-- [ ] T122 [P] Wire central `node-cron` scheduler (`recalcStats`, `trending`, `deadlineReminders`, `modificationsOverdue`, `cleanup` with `JobLock` and `Africa/Cairo` timezone) in `server/src/jobs/scheduler.js` and start from `server/src/index.js`
-- [ ] T123 [P] Implement Atlas Search index sync script (`projects_search`, `messages_search` with `lucene.arabic`) and University Admin Atlas M0 storage-usage readout in `server/src/scripts/sync-search-indexes.js` and `server/src/modules/reports/reports.service.js`
-- [ ] T124 [P] Create automated full authorization matrix test walking every row of `server/src/core/authz/policies.js` (in-scope pass + out-of-scope deny, proving `SC-004` = 100%) in `server/tests/authz/full-matrix.test.js`
-- [ ] T125 [P] Write Playwright end-to-end critical-journey test (student sign-up → proposal → two-step approval → deliverable v1/v2 & progress % → defense & blind grading → finalization & PDF certificate → mini-site publish → eligible voting & duplicate block → scoped report export) in `e2e/journeys/full-lifecycle.spec.js`
-- [ ] T126 [P] Write Playwright WCAG 2.1 AA (`@axe-core/playwright` at `360×740` and `390×844`, zero horizontal overflow) and English-text detector (`SC-011`) suite in `e2e/a11y/rtl-wcag-arabic.spec.js`
-- [ ] T127 [P] Add automated performance & concurrency verification scripts (Playwright/Lighthouse mobile 4G LCP `< 2 s` for `SC-005`, and autocannon/k6 500-concurrent-user peak smoke test for `SC-012`) in `e2e/perf/lcp-and-load.spec.js`
-- [ ] T128 [P] Configure CI pipeline (lint → shared/server/client tests → ≥ 90% coverage gate on `calc`/`machines`/`authz` → public bundle ≤ 180 KB gzip check → Playwright E2E) in `.github/workflows/ci.yml`
-- [ ] T129 [P] Configure Vercel SPA deployment (`rewrites` all routes to `/index.html`, hashed asset cache headers, `VITE_API_URL` build validation) in `client/vercel.json` and `client/vite.config.js`
-- [ ] T130 [P] Configure Railway always-on backend deployment (`npm --workspace server start`, `/api/health` readiness probe, `trust proxy 1`, Atlas M0 `maxPoolSize` pool tuning, env validation) in `railway.toml` and `server/src/config/db.js`
-- [ ] T131 Run end-to-end `quickstart.md` local + staging smoke verification (Vercel ↔ Railway cross-domain refresh cookie, Atlas Search `READY`, Cloudinary signed upload & PDF/ZIP delivery, live Socket.IO, Arabic PDF/Excel downloads) and record verified deployment notes in `specs/001-student-projects-platform/quickstart.md`
+- [X] T122 [P] Wire central `node-cron` scheduler (`recalcStats`, `trending`, `deadlineReminders`, `modificationsOverdue`, `cleanup` with `JobLock` and `Africa/Cairo` timezone) in `server/src/jobs/scheduler.js` and start from `server/src/index.js`
+- [X] T123 [P] Implement Atlas Search index sync script (`projects_search`, `messages_search` with `lucene.arabic`) and University Admin Atlas M0 storage-usage readout in `server/src/scripts/sync-search-indexes.js` and `server/src/modules/reports/reports.service.js`
+- [X] T124 [P] Create automated full authorization matrix test walking every row of `server/src/core/authz/policies.js` (in-scope pass + out-of-scope deny, proving `SC-004` = 100%) in `server/tests/authz/full-matrix.test.js`
+- [X] T125 [P] Write Playwright end-to-end critical-journey test (student sign-up → proposal → two-step approval → deliverable v1/v2 & progress % → defense & blind grading → finalization & PDF certificate → mini-site publish → eligible voting & duplicate block → scoped report export) in `e2e/journeys/full-lifecycle.spec.js`
+- [X] T126 [P] Write Playwright WCAG 2.1 AA (`@axe-core/playwright` at `360×740` and `390×844`, zero horizontal overflow) and English-text detector (`SC-011`) suite in `e2e/a11y/rtl-wcag-arabic.spec.js`
+- [X] T127 [P] Add automated performance & concurrency verification scripts (Playwright/Lighthouse mobile 4G LCP `< 2 s` for `SC-005`, and autocannon/k6 500-concurrent-user peak smoke test for `SC-012`) in `e2e/perf/lcp-and-load.spec.js`
+- [X] T128 [P] Configure CI pipeline (lint → shared/server/client tests → ≥ 90% coverage gate on `calc`/`machines`/`authz` → public bundle ≤ 180 KB gzip check → Playwright E2E) in `.github/workflows/ci.yml`
+- [X] T129 [P] Configure Vercel SPA deployment (`rewrites` all routes to `/index.html`, hashed asset cache headers, `VITE_API_URL` build validation) in `client/vercel.json` and `client/vite.config.js`
+- [X] T130 [P] Configure Railway always-on backend deployment (`npm --workspace server start`, `/api/health` readiness probe, `trust proxy 1`, Atlas M0 `maxPoolSize` pool tuning, env validation) in `railway.toml` and `server/src/config/db.js`
+- [X] T131 Run end-to-end `quickstart.md` local + staging smoke verification (Vercel ↔ Railway cross-domain refresh cookie, Atlas Search `READY`, Cloudinary signed upload & PDF/ZIP delivery, live Socket.IO, Arabic PDF/Excel downloads) and record verified deployment notes in `specs/001-student-projects-platform/quickstart.md`
 
 ---
 

@@ -1,4 +1,4 @@
-export { invalidateImpostorVotes } from './voting.service.js';
+export { invalidateImpostorVotes, syncCompetitionStates } from './voting.service.js';
 export {
   aggregateContactRequests,
   aggregatePageViews,

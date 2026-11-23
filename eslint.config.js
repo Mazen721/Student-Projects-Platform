@@ -95,7 +95,7 @@ export default [
     },
   },
   {
-    files: ['server/**/*.js', 'e2e/**/*.js', 'playwright.config.js'],
+    files: ['server/**/*.js', 'e2e/**/*.js', 'playwright.config.js', 'client/vite.config.js'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',
@@ -105,6 +105,15 @@ export default [
     },
     rules: {
       'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    },
+  },
+  {
+    files: ['e2e/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        ...globals.browser,
+      },
     },
   },
   {

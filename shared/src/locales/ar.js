@@ -754,6 +754,11 @@ const ar = {
     detailsSection: 'التفاصيل',
     reportGeneratedAt: 'تاريخ التصدير',
     noYearAvailable: 'لا توجد أعوام أكاديمية مضافة بعد',
+    storageUsageTitle: 'استخدام مساحة قاعدة البيانات',
+    storageUsageMetric: '{used} من {limit} ميجابايت ({percent}%)',
+    storageStatusNormal: 'ضمن الحد الآمن',
+    storageStatusWarning: 'اقترب من الحد — يُنصح بالتخطيط للأرشفة',
+    storageStatusCritical: 'حرج — يرجى الأرشفة غير المتصلة فوراً',
   },
   statuses: {
     active: 'نشط',

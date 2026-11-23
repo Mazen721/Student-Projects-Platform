@@ -19,6 +19,8 @@ const envSchema = z.object({
   REFRESH_TOKEN_TTL: z.string().default('7d'),
   TZ_DISPLAY: z.string().default('Africa/Cairo'),
   RATE_LIMIT_GLOBAL_MAX: z.coerce.number().int().positive().default(300),
+  MONGO_MAX_POOL_SIZE: z.coerce.number().int().min(5).max(50).default(20),
+  MONGO_MIN_POOL_SIZE: z.coerce.number().int().min(1).max(10).default(2),
 });
 
 export function parseEnv(rawEnv = process.env) {

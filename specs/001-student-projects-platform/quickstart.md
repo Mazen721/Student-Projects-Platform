@@ -160,4 +160,20 @@ in [contracts/](./contracts/README.md).
 
 - **Vercel (`client`)**: Root directory `client`; `vercel.json` rewrites `/(.*)` → `/index.html`; `VITE_API_URL` points to the Railway API domain; direct navigation to `/p/<slug>` returns HTTP 200.
 - **Railway (`server`)**: Start command `npm --workspace server start`; `/api/health` green; all 7 required env vars set; `CLIENT_URL` matches exact Vercel origin (or shared custom university domain for first-party refresh cookies — see [research.md R-05](./research.md#r-05--authentication-tokens-and-cross-site-cookies)).
-- **MongoDB Atlas**: M0 indexes built (unique `votes {projectId, userId}`, partial unique `users`, TTL indexes) and Atlas Search indexes (`projects_search`, `messages_search`) status `READY`.
+- **MongoDB Atlas**: M0 cluster (`maxPoolSize` ≤ 20), indexes built (unique `votes {projectId, userId}`, partial unique `users`, TTL indexes), and Atlas Search indexes (`projects_search`, `messages_search`) synced via `npm --workspace server run search:sync` and reporting `READY`.
+
+---
+
+## 7. Verified Smoke Run Notes (Phase 10 — 2026-11-23)
+
+- **Local & CI Gates Verified**:
+  - `npm run lint`: passed (`0` errors across `shared`, `server`, `client`, `e2e`).
+  - `npm --workspace shared test`: `5` files / `73` tests passed (progress %, grading math, FSMs, Arabic normalizer, Zod schemas).
+  - `npm --workspace client test`: `7` files / `31` tests passed (Axios single-flight refresh, RTL UI kit, auth/org/projects/tracking/collaboration/evaluation/showcase flows).
+  - `npm --workspace server test`: `19` files / `340` tests passed against `MongoMemoryReplSet` (including `tests/authz/full-matrix.test.js` covering 100% of `policies.js` actions and `tests/unit/phase10-ops.test.js` covering 5-job `JobLock` scheduler, Atlas index sync, and M0 storage readout).
+  - `npm --workspace client run build` + `node e2e/perf/check-bundle-budget.js`: passed (`148.1 KB` gzip ≤ `180 KB` public budget with `VITE_API_URL` validation).
+  - `npm run test:e2e`: `21` executed Playwright specs passed (`6` mobile skips for desktop-only lifecycle/perf specs) across `chromium-desktop`, `mobile-360` (`360×740`), and `mobile-390` (`390×844`) — covering full student-to-report lifecycle, PDF certificate & Excel/PDF report downloads, zero WCAG 2.1 AA critical/serious Axe violations, zero horizontal overflow, Arabic-only UI check, mobile 4G LCP `< 2 s`, and `500` concurrent read requests (`0` failures).
+- **Staging / Production Cloud Checks (Requires Live Atlas M0, Cloudinary, Vercel, Railway Credentials)**:
+  - Run `npm --workspace server run seed:admin` and `npm --workspace server run search:sync` once against the live Atlas M0 URI and confirm `projects_search` and `messages_search` reach `READY`.
+  - Confirm Cloudinary Security setting **Allow delivery of PDF and ZIP files** is enabled before testing live signed PDF/ZIP attachments.
+  - Deploy `client/` to Vercel (`client/vercel.json`) with `VITE_API_URL` and `server/` to Railway (`railway.toml`) with `CLIENT_URL` matching the exact Vercel/custom origin, then verify `/api/health`, cross-domain refresh cookies (`SameSite=None; Secure`), live Socket.IO chat, and Arabic PDF/Excel downloads on staging.

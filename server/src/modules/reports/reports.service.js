@@ -43,6 +43,40 @@ import StatsCache from './statsCache.model.js';
 
 const APPROVED_OR_ARCHIVED = [PROPOSAL_STATUSES.APPROVED, PROPOSAL_STATUSES.ARCHIVED];
 const TOP_BUCKET_LIMIT = 25;
+const ATLAS_M0_LIMIT_MB = 512;
+const ATLAS_M0_WARNING_MB = 350;
+const ATLAS_M0_CRITICAL_MB = 440;
+const BYTES_PER_MB = 1024 * 1024;
+
+export async function getAtlasStorageUsage() {
+  if (mongoose.connection.readyState !== 1 || !mongoose.connection.db) {
+    return null;
+  }
+  const stats = await mongoose.connection.db.stats({ scale: 1 });
+  const dataSizeBytes = Number(stats.dataSize || 0);
+  const indexSizeBytes = Number(stats.indexSize || 0);
+  const usedMb = round2((dataSizeBytes + indexSizeBytes) / BYTES_PER_MB);
+  const percent = round2(Math.min(100, (usedMb / ATLAS_M0_LIMIT_MB) * 100));
+  const level =
+    usedMb >= ATLAS_M0_CRITICAL_MB
+      ? 'critical'
+      : usedMb >= ATLAS_M0_WARNING_MB
+        ? 'warning'
+        : 'normal';
+
+  return {
+    dataSizeMb: round2(dataSizeBytes / BYTES_PER_MB),
+    indexSizeMb: round2(indexSizeBytes / BYTES_PER_MB),
+    usedMb,
+    limitMb: ATLAS_M0_LIMIT_MB,
+    warningMb: ATLAS_M0_WARNING_MB,
+    criticalMb: ATLAS_M0_CRITICAL_MB,
+    percent,
+    level,
+    collections: Number(stats.collections || 0),
+    objects: Number(stats.objects || 0),
+  };
+}
 
 function initFlagCounts() {
   return {
@@ -289,6 +323,11 @@ export async function getDashboardReport({ scopeFilter, query }) {
     }));
   }
 
+  const storageUsage =
+    ctx.allowed.isUniversity && ctx.scopeType === 'university'
+      ? await getAtlasStorageUsage()
+      : undefined;
+
   return {
     scopeType: ctx.scopeType,
     scopeId: ctx.scopeId ? String(ctx.scopeId) : null,
@@ -296,6 +335,7 @@ export async function getDashboardReport({ scopeFilter, query }) {
     yearLabel: year.label,
     kpis,
     children,
+    ...(storageUsage ? { storageUsage } : {}),
     computedAt: new Date(),
   };
 }

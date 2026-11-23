@@ -121,9 +121,10 @@ export default function PublicHomePage() {
 
       <Card title={ar.showcase.allProjects}>
         <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-          <Field label={ar.common.search}>
+          <Field id="home-search" label={ar.common.search}>
             <div className="relative">
               <Input
+                id="home-search"
                 value={filters.q}
                 onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value, page: 1 }))}
                 placeholder={ar.showcase.searchPlaceholder}
@@ -136,8 +137,9 @@ export default function PublicHomePage() {
             </div>
           </Field>
 
-          <Field label={ar.auth.college}>
+          <Field id="home-college" label={ar.auth.college}>
             <Select
+              id="home-college"
               value={filters.collegeId}
               onChange={(e) => setFilters((f) => ({ ...f, collegeId: e.target.value, page: 1 }))}
               placeholder={ar.common.all}
@@ -145,8 +147,9 @@ export default function PublicHomePage() {
             />
           </Field>
 
-          <Field label={ar.projects.field}>
+          <Field id="home-field" label={ar.projects.field}>
             <Select
+              id="home-field"
               value={filters.field}
               onChange={(e) => setFilters((f) => ({ ...f, field: e.target.value, page: 1 }))}
               placeholder={ar.common.all}
@@ -157,8 +160,9 @@ export default function PublicHomePage() {
             />
           </Field>
 
-          <Field label={ar.projects.type}>
+          <Field id="home-type" label={ar.projects.type}>
             <Select
+              id="home-type"
               value={filters.type}
               onChange={(e) => setFilters((f) => ({ ...f, type: e.target.value, page: 1 }))}
               placeholder={ar.common.all}
@@ -169,8 +173,9 @@ export default function PublicHomePage() {
             />
           </Field>
 
-          <Field label={ar.showcase.sortBy}>
+          <Field id="home-sort" label={ar.showcase.sortBy}>
             <Select
+              id="home-sort"
               value={filters.sort}
               onChange={(e) => setFilters((f) => ({ ...f, sort: e.target.value, page: 1 }))}
               placeholder={false}

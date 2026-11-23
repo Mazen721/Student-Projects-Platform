@@ -7,10 +7,16 @@ export async function connectDb(uri = env.MONGO_URI) {
   if (mongoose.connection.readyState === 1) {
     return mongoose.connection;
   }
+  const maxPoolSize = Math.min(50, Math.max(5, env.MONGO_MAX_POOL_SIZE));
+  const minPoolSize = Math.min(maxPoolSize, Math.max(1, env.MONGO_MIN_POOL_SIZE));
+
   await mongoose.connect(uri, {
-    maxPoolSize: 20,
-    minPoolSize: 2,
+    maxPoolSize,
+    minPoolSize,
     serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
+    heartbeatFrequencyMS: 10000,
+    retryWrites: true,
   });
   return mongoose.connection;
 }

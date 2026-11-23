@@ -482,3 +482,23 @@ export async function getPublicCompetitionById(competitionId) {
   const projectMap = new Map(projects.map((p) => [String(p._id), p]));
   return serializeCompetition(doc, ranking, projectMap);
 }
+
+export async function syncCompetitionStates() {
+  const candidates = await Competition.find({
+    state: mongoose.trusted({ $ne: COMPETITION_STATES.CLOSED }),
+  }).limit(50);
+
+  let frozenCount = 0;
+  let openedCount = 0;
+  for (const comp of candidates) {
+    const prevState = comp.state;
+    await freezeCompetitionIfEnded(comp);
+    if (comp.state === COMPETITION_STATES.CLOSED && prevState !== COMPETITION_STATES.CLOSED) {
+      frozenCount += 1;
+    } else if (comp.state === COMPETITION_STATES.OPEN && prevState === COMPETITION_STATES.SCHEDULED) {
+      openedCount += 1;
+    }
+  }
+
+  return { checked: candidates.length, openedCount, frozenCount };
+}

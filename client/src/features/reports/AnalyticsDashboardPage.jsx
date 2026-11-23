@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Award, CheckCircle2, FolderKanban, TrendingUp } from 'lucide-react';
 import ar, { t } from '@/locales/ar';
 import { formatPercent } from '@/lib/format';
-import { Badge, Button, Card, CardSkeleton, EmptyState, ResponsiveTable } from '@/components/ui';
+import { Badge, Button, Card, CardSkeleton, EmptyState, ProgressBar, ResponsiveTable } from '@/components/ui';
 import { RtlBarChart } from '@/components/charts';
 import { useReportDashboardQuery } from './reportsApi';
 import { KpiTile, ReportFiltersBar, useReportFilterState } from './ReportFiltersBar';
@@ -157,6 +157,38 @@ export default function AnalyticsDashboardPage() {
           <Card title={ar.reports.byUnit}>
             <ResponsiveTable columns={tableColumns} rows={childRows} />
           </Card>
+
+          {data.storageUsage && (
+            <Card title={ar.reports.storageUsageTitle}>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-sm font-bold text-ink">
+                  {t('reports.storageUsageMetric', {
+                    used: data.storageUsage.usedMb,
+                    limit: data.storageUsage.limitMb,
+                    percent: data.storageUsage.percent,
+                  })}
+                </span>
+                <Badge
+                  tone={
+                    data.storageUsage.level === 'critical'
+                      ? 'danger'
+                      : data.storageUsage.level === 'warning'
+                        ? 'warning'
+                        : 'success'
+                  }
+                >
+                  {data.storageUsage.level === 'critical'
+                    ? ar.reports.storageStatusCritical
+                    : data.storageUsage.level === 'warning'
+                      ? ar.reports.storageStatusWarning
+                      : ar.reports.storageStatusNormal}
+                </Badge>
+              </div>
+              <div className="mt-3">
+                <ProgressBar value={data.storageUsage.percent} />
+              </div>
+            </Card>
+          )}
         </>
       )}
     </div>

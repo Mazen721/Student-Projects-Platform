@@ -1,5 +1,10 @@
 import { recalculateAllStatsCaches } from '../modules/reports/index.js';
+import { syncCompetitionStates } from '../modules/showcase/index.js';
 
 export async function runRecalcStatsJob() {
-  return recalculateAllStatsCaches();
+  const [stats, competitions] = await Promise.all([
+    recalculateAllStatsCaches(),
+    syncCompetitionStates(),
+  ]);
+  return { ...stats, competitions };
 }

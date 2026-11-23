@@ -9,5 +9,11 @@ export default defineConfig({
     testTimeout: 30000,
     hookTimeout: 60000,
     pool: 'forks',
+    poolOptions: {
+      forks: {
+        maxForks: 2,
+        minForks: 1,
+      },
+    },
   },
 });

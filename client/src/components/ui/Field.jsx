@@ -1,9 +1,23 @@
-import { useId } from 'react';
+import { cloneElement, isValidElement, useId } from 'react';
 
 export function Field({ id, label, error, hint, required = false, children, className = '' }) {
   const generatedId = useId();
   const fieldId = id || generatedId;
   const errorId = error ? `${fieldId}-error` : undefined;
+
+  let renderedChildren = children;
+  if (typeof children === 'function') {
+    renderedChildren = children({
+      id: fieldId,
+      'aria-invalid': Boolean(error),
+      'aria-describedby': errorId,
+    });
+  } else if (isValidElement(children) && typeof children.type !== 'string' && !children.props?.id) {
+    renderedChildren = cloneElement(children, {
+      id: fieldId,
+      ...(errorId && !children.props?.['aria-describedby'] ? { 'aria-describedby': errorId } : {}),
+    });
+  }
 
   return (
     <div className={`flex flex-col ${className}`}>
@@ -13,9 +27,7 @@ export function Field({ id, label, error, hint, required = false, children, clas
           {required && <span className="ms-1 text-[#b91c1c] after:content-['*']" aria-hidden="true" />}
         </label>
       )}
-      {typeof children === 'function'
-        ? children({ id: fieldId, 'aria-invalid': Boolean(error), 'aria-describedby': errorId })
-        : children}
+      {renderedChildren}
       {hint && !error && <p className="mt-1 text-xs text-muted">{hint}</p>}
       {error && (
         <p id={errorId} role="alert" className="mt-1 text-xs font-semibold text-[#b91c1c]">

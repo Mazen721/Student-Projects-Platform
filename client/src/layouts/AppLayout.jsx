@@ -153,7 +153,6 @@ export function AppLayout({ unreadCount: unreadCountProp, roleSwitcherSlot = nul
   }, [accessToken, unreadCountProp]);
 
   const { primary, secondary } = getRoleNavItems(roles);
-  const allNavItems = [...primary, ...secondary];
 
   async function handleLogout() {
     try {
@@ -192,7 +191,7 @@ export function AppLayout({ unreadCount: unreadCountProp, roleSwitcherSlot = nul
           </div>
 
           <nav aria-label={ar.nav.home} className="hidden items-center gap-1 lg:flex">
-            {allNavItems.map((item) => {
+            {primary.map((item) => {
               const Icon = item.icon;
               return (
                 <NavLink
@@ -200,7 +199,7 @@ export function AppLayout({ unreadCount: unreadCountProp, roleSwitcherSlot = nul
                   to={item.to}
                   end={item.end}
                   className={({ isActive }) =>
-                    `inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-bold transition ${
+                    `inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-bold whitespace-nowrap transition ${
                       isActive ? 'bg-gold text-navy' : 'text-white/90 hover:bg-navy-light'
                     }`
                   }
@@ -210,6 +209,17 @@ export function AppLayout({ unreadCount: unreadCountProp, roleSwitcherSlot = nul
                 </NavLink>
               );
             })}
+            {secondary.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setMoreDrawerOpen(true)}
+                aria-label={ar.common.openMenu}
+                className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-bold whitespace-nowrap text-white/90 transition hover:bg-navy-light cursor-pointer"
+              >
+                <Menu className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span>{ar.common.more}</span>
+              </button>
+            )}
           </nav>
 
           <div className="flex items-center gap-2">
