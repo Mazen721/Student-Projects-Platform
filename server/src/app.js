@@ -16,6 +16,7 @@ import { createProjectsRouter } from './modules/projects/projects.routes.js';
 import { createTrackingRouter } from './modules/tracking/tracking.routes.js';
 import { createCollaborationRouter } from './modules/collaboration/collaboration.routes.js';
 import { createEvaluationRouter } from './modules/evaluation/evaluation.routes.js';
+import { createReportsRouter } from './modules/reports/reports.routes.js';
 import { createShowcaseRouter } from './modules/showcase/showcase.routes.js';
 
 export function createApp({ mountModuleRoutes } = {}) {
@@ -51,6 +52,7 @@ export function createApp({ mountModuleRoutes } = {}) {
   app.use('/api/v1', createCollaborationRouter(limiters));
   app.use('/api/v1', createEvaluationRouter(limiters));
   app.use('/api/v1', createShowcaseRouter(limiters));
+  app.use('/api/v1', createReportsRouter(limiters));
 
   if (typeof mountModuleRoutes === 'function') {
     mountModuleRoutes(app, limiters);

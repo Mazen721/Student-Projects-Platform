@@ -133,3 +133,27 @@ export async function findShowcaseTeamUsersByIds(userIds = []) {
     ])
   );
 }
+
+export async function listActiveSupervisorsForReports({ collegeIds, departmentIds } = {}) {
+  const filter = {
+    status: USER_STATUSES.ACTIVE,
+    'roles.role': ROLES.SUPERVISOR,
+  };
+  if (Array.isArray(collegeIds) && collegeIds.length > 0) {
+    filter.collegeId = mongoose.trusted({ $in: collegeIds });
+  }
+  if (Array.isArray(departmentIds) && departmentIds.length > 0) {
+    filter.departmentId = mongoose.trusted({ $in: departmentIds });
+  }
+  const docs = await User.find(filter)
+    .select('_id name status collegeId departmentId')
+    .sort({ name: 1 })
+    .lean();
+  return docs.map((d) => ({
+    id: String(d._id),
+    name: d.name,
+    status: d.status,
+    collegeId: d.collegeId ? String(d.collegeId) : null,
+    departmentId: d.departmentId ? String(d.departmentId) : null,
+  }));
+}

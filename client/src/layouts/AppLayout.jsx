@@ -63,6 +63,14 @@ function getRoleNavItems(roles = []) {
     });
   }
 
+  if (roleNames.has(ROLES.SUPERVISOR)) {
+    secondary.push({
+      to: '/app/reports/supervisor',
+      label: ar.reports.supervisorDashboard,
+      icon: BarChart3,
+    });
+  }
+
   if (
     roleNames.has(ROLES.UNIVERSITY_ADMIN) ||
     roleNames.has(ROLES.COLLEGE_ADMIN) ||

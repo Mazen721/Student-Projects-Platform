@@ -45,6 +45,13 @@ const ProjectMiniSitePage = lazy(() => import('@/features/showcase/ProjectMiniSi
 const CompetitionsPage = lazy(() => import('@/features/showcase/CompetitionsPage'));
 const FlaggedVotesPage = lazy(() => import('@/features/showcase/FlaggedVotesPage'));
 const InvestorWorkspacePage = lazy(() => import('@/features/showcase/InvestorWorkspacePage'));
+const AnalyticsDashboardPage = lazy(() => import('@/features/reports/AnalyticsDashboardPage'));
+const SupervisorDashboardPage = lazy(() => import('@/features/reports/SupervisorDashboardPage'));
+const ProjectReportsPage = lazy(() => import('@/features/reports/ProjectReportsPage'));
+const CompletionReportPage = lazy(() => import('@/features/reports/CompletionReportPage'));
+const SupervisorDistributionPage = lazy(() => import('@/features/reports/SupervisorDistributionPage'));
+const EvaluationReportPage = lazy(() => import('@/features/reports/EvaluationReportPage'));
+const InsightsReportPage = lazy(() => import('@/features/reports/InsightsReportPage'));
 
 function LazyRoute({ children }) {
   return <Suspense fallback={<CardSkeleton />}>{children}</Suspense>;
@@ -182,6 +189,23 @@ export const router = createBrowserRouter([
                   },
                   { path: 'users', element: <LazyRoute><UsersAdminPage /></LazyRoute> },
                   { path: 'audit-logs', element: <LazyRoute><AuditLogsPage /></LazyRoute> },
+                  { path: 'reports/projects', element: <LazyRoute><ProjectReportsPage /></LazyRoute> },
+                  { path: 'reports/completion', element: <LazyRoute><CompletionReportPage /></LazyRoute> },
+                  { path: 'reports/supervisors', element: <LazyRoute><SupervisorDistributionPage /></LazyRoute> },
+                  { path: 'reports/evaluation', element: <LazyRoute><EvaluationReportPage /></LazyRoute> },
+                  { path: 'reports/insights', element: <LazyRoute><InsightsReportPage /></LazyRoute> },
+                ],
+              },
+              {
+                element: <RequireRole allowedRoles={REVIEW_ROLES} />,
+                children: [
+                  { path: 'reports', element: <LazyRoute><AnalyticsDashboardPage /></LazyRoute> },
+                ],
+              },
+              {
+                element: <RequireRole allowedRoles={[ROLES.SUPERVISOR]} />,
+                children: [
+                  { path: 'reports/supervisor', element: <LazyRoute><SupervisorDashboardPage /></LazyRoute> },
                 ],
               },
               {

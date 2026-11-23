@@ -95,6 +95,29 @@ function filterByCollegeOrDepartment(assignments) {
   return clauses.length === 1 ? clauses[0] : { $or: clauses };
 }
 
+function filterForReports(assignments, userId, action) {
+  const includeSupervisor =
+    action === 'report.dashboard' || action === 'report.supervisorSelf';
+  const clauses = [];
+  for (const assignment of assignments) {
+    if (assignment.role === ROLES.UNIVERSITY_ADMIN && action !== 'report.supervisorSelf') {
+      return {};
+    }
+    if (assignment.role === ROLES.COLLEGE_ADMIN && (assignment.collegeId || assignment.scopeId)) {
+      clauses.push({ collegeId: toIdString(assignment.collegeId ?? assignment.scopeId) });
+    } else if (
+      assignment.role === ROLES.DEPARTMENT_ADMIN &&
+      (assignment.departmentId || assignment.scopeId)
+    ) {
+      clauses.push({ departmentId: toIdString(assignment.departmentId ?? assignment.scopeId) });
+    } else if (assignment.role === ROLES.SUPERVISOR && includeSupervisor) {
+      clauses.push({ supervisorIds: userId });
+    }
+  }
+  if (clauses.length === 0) return { _id: null };
+  return clauses.length === 1 ? clauses[0] : { $or: clauses };
+}
+
 function filterForDefenses(assignments, userId) {
   const clauses = [];
   for (const assignment of assignments) {
@@ -145,10 +168,12 @@ export function buildScopeFilter(user, action) {
   if (action === 'college.list') {
     return filterForColleges(assignments);
   }
+  if (action.startsWith('report.')) {
+    return filterForReports(assignments, userId, action);
+  }
   if (
     action === 'supervision.viewLoad' ||
     action.startsWith('user.') ||
-    action.startsWith('report.') ||
     action.startsWith('defense.') ||
     action.startsWith('reeval.') ||
     action.startsWith('vote.')

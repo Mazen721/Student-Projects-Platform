@@ -179,3 +179,31 @@ export async function setUniversityFeaturedProjectIds(projectIds, { actor, ip })
 
   return (uni.settings.featuredProjectIds || []).map(String);
 }
+
+export async function listReportOrgEntities({ collegeIds, departmentIds } = {}) {
+  const collegeFilter =
+    Array.isArray(collegeIds) && collegeIds.length > 0
+      ? { _id: mongoose.trusted({ $in: collegeIds }) }
+      : {};
+  const deptFilter =
+    Array.isArray(departmentIds) && departmentIds.length > 0
+      ? { _id: mongoose.trusted({ $in: departmentIds }) }
+      : Array.isArray(collegeIds) && collegeIds.length > 0
+        ? { collegeId: mongoose.trusted({ $in: collegeIds }) }
+        : {};
+
+  const [colleges, departments, academicYears] = await Promise.all([
+    College.find(collegeFilter).select('_id name code status settings').sort({ name: 1 }).lean(),
+    Department.find(deptFilter).select('_id name code collegeId status').sort({ name: 1 }).lean(),
+    AcademicYear.find(
+      Array.isArray(collegeIds) && collegeIds.length > 0
+        ? { collegeId: mongoose.trusted({ $in: collegeIds }) }
+        : {}
+    )
+      .select('_id collegeId label isCurrent status startDate')
+      .sort({ startDate: -1 })
+      .lean(),
+  ]);
+
+  return { colleges, departments, academicYears };
+}

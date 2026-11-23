@@ -23,4 +23,9 @@ export {
   listAnnouncementProjectRecipients,
   registerOnProjectMembersChangedHook,
 } from './projectShared.js';
+export {
+  aggregateProjects,
+  findAndCountReportProjects,
+  findSupervisedProjectsForReport,
+} from './projectsReport.service.js';
 export { removeImpostorMemberships } from './team.service.js';

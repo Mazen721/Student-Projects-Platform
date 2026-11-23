@@ -10,13 +10,23 @@ const logger = pino({ level: env.NODE_ENV === 'production' ? 'info' : 'debug' })
 
 async function startServer() {
   await connectDb();
+  if (env.NODE_ENV === 'development') {
+    console.log('\x1b[32m✓ MongoDB connected\x1b[0m');
+  } else {
+    logger.info('MongoDB connected');
+  }
+
   const app = createApp();
   const server = http.createServer(app);
   const io = initSocket(server);
   startScheduler();
 
   server.listen(env.PORT, () => {
-    logger.info({ port: env.PORT, env: env.NODE_ENV }, 'Server listening');
+    if (env.NODE_ENV === 'development') {
+      console.log(`\x1b[32m✓ Server listening on http://localhost:${env.PORT}\x1b[0m`);
+    } else {
+      logger.info({ port: env.PORT, env: env.NODE_ENV }, 'Server listening');
+    }
   });
 
   async function shutdown(signal) {

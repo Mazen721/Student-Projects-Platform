@@ -12,6 +12,7 @@ export {
   findUsersBasicByIds,
   listActiveExaminersInCollege,
   listActiveStaffAndStudentIdsInScope,
+  listActiveSupervisorsForReports,
   listCollegeAdminIds,
   listSupervisorsInScope,
 } from './userLookup.service.js';

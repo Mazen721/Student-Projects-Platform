@@ -5,3 +5,8 @@ export {
 } from './phases.service.js';
 export { getCommentTargetProjectId } from './board-bom.service.js';
 export { logTimelineEvent } from './timeline.service.js';
+export {
+  aggregateProjectPhases,
+  aggregateSubmissions,
+  aggregateToolItems,
+} from './trackingReport.service.js';
