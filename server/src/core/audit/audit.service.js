@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { hashIp } from '../auth/tokens.js';
 import { buildPageMeta, parsePagination } from '../pagination.js';
 import AuditLog from './auditlog.model.js';
@@ -72,11 +73,16 @@ export async function listAuditLogs(scopeFilter = {}, query = {}) {
   if (query.action) filter.action = query.action;
   if (query.actorId) filter.actorId = query.actorId;
   if (query.targetType) filter.targetType = query.targetType;
-  if (query.targetId) filter.targetId = query.targetId;
+  if (query.targetId) {
+    filter.targetId = mongoose.Types.ObjectId.isValid(query.targetId)
+      ? mongoose.trusted({ $in: [query.targetId, new mongoose.Types.ObjectId(query.targetId)] })
+      : query.targetId;
+  }
   if (query.from || query.to) {
-    filter.at = {};
-    if (query.from) filter.at.$gte = new Date(query.from);
-    if (query.to) filter.at.$lte = new Date(query.to);
+    const range = {};
+    if (query.from) range.$gte = new Date(query.from);
+    if (query.to) range.$lte = new Date(query.to);
+    filter.at = mongoose.trusted(range);
   }
 
   const [items, total] = await Promise.all([

@@ -26,7 +26,7 @@ export const POLICIES = Object.freeze({
     { roles: STAFF_ADMINS, scope: AUTHZ_SCOPES.DEPARTMENT },
   ],
   'user.list': [{ roles: STAFF_ADMINS, scope: AUTHZ_SCOPES.DEPARTMENT }],
-  'user.searchForTeam': [{ roles: [UNIVERSITY_ADMIN, COLLEGE_ADMIN, DEPARTMENT_ADMIN, STUDENT], scope: AUTHZ_SCOPES.UNIVERSITY }],
+  'user.searchForTeam': [{ roles: [UNIVERSITY_ADMIN, COLLEGE_ADMIN, DEPARTMENT_ADMIN, STUDENT], scope: AUTHZ_SCOPES.SELF }],
   'user.deactivate': [{ roles: [UNIVERSITY_ADMIN, COLLEGE_ADMIN], scope: AUTHZ_SCOPES.COLLEGE }],
   'user.reactivate': [{ roles: [UNIVERSITY_ADMIN, COLLEGE_ADMIN], scope: AUTHZ_SCOPES.COLLEGE }],
   'user.resetPassword': [{ roles: [UNIVERSITY_ADMIN, COLLEGE_ADMIN], scope: AUTHZ_SCOPES.COLLEGE }],

@@ -84,6 +84,7 @@ export const changePasswordSchema = z
 export const acceptInviteSchema = z
   .object({
     name: nameSchema.optional(),
+    email: emailSchema.optional(),
     password: passwordSchema.optional(),
   })
   .strict();
@@ -132,3 +133,27 @@ export const createInvitationSchema = z
     scopeId: objectIdSchema.optional(),
   })
   .strict();
+
+export const deactivateUserSchema = z
+  .object({
+    reason: z.string().trim().min(2, 'validation.minLength').max(500, 'validation.maxLength'),
+    releaseIdentifiers: z.boolean().optional(),
+  })
+  .strict();
+
+export const reasonOptionalSchema = z
+  .object({
+    reason: z.string().trim().max(500, 'validation.maxLength').optional(),
+  })
+  .strict();
+
+export const reasonRequiredSchema = z
+  .object({
+    reason: z.string().trim().min(2, 'validation.minLength').max(500, 'validation.maxLength'),
+  })
+  .strict();
+
+export const searchUsersQuerySchema = z.object({
+  q: z.string().trim().max(100).optional(),
+  collegeId: objectIdSchema.optional(),
+});

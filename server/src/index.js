@@ -4,6 +4,7 @@ import { env } from './config/env.js';
 import { connectDb, disconnectDb } from './config/db.js';
 import { createApp } from './app.js';
 import { initSocket } from './realtime/socket.js';
+import { startScheduler, stopScheduler } from './jobs/scheduler.js';
 
 const logger = pino({ level: env.NODE_ENV === 'production' ? 'info' : 'debug' });
 
@@ -12,6 +13,7 @@ async function startServer() {
   const app = createApp();
   const server = http.createServer(app);
   const io = initSocket(server);
+  startScheduler();
 
   server.listen(env.PORT, () => {
     logger.info({ port: env.PORT, env: env.NODE_ENV }, 'Server listening');
@@ -19,6 +21,7 @@ async function startServer() {
 
   async function shutdown(signal) {
     logger.info({ signal }, 'Shutting down server');
+    stopScheduler();
     io.close();
     server.close(async () => {
       await disconnectDb();

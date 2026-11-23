@@ -15,6 +15,7 @@ function includesId(list, targetId) {
 function isSupervisorOfScope(userId, scope) {
   return (
     toIdString(scope.supervisorId) === userId ||
+    toIdString(scope.reviewerId) === userId ||
     includesId(scope.coSupervisorIds, userId) ||
     includesId(scope.mentorIds, userId)
   );
@@ -68,13 +69,22 @@ function assignmentMatchesScope(assignment, requiredScope, scope, userId) {
     case AUTHZ_SCOPES.UNIVERSITY:
       return false;
     case AUTHZ_SCOPES.COLLEGE:
-      return Boolean(targetCollegeId ? assignCollegeId === targetCollegeId : assignCollegeId);
+      if ('collegeId' in scope) {
+        return Boolean(targetCollegeId && assignCollegeId === targetCollegeId);
+      }
+      return Boolean(assignCollegeId);
     case AUTHZ_SCOPES.DEPARTMENT:
       if (assignment.role === ROLES.COLLEGE_ADMIN) {
-        return Boolean(targetCollegeId ? assignCollegeId === targetCollegeId : assignCollegeId);
+        if ('collegeId' in scope) {
+          return Boolean(targetCollegeId && assignCollegeId === targetCollegeId);
+        }
+        return Boolean(assignCollegeId);
       }
       if (assignment.role === ROLES.DEPARTMENT_ADMIN) {
-        return Boolean(targetDepartmentId ? assignDeptId === targetDepartmentId : assignDeptId);
+        if ('departmentId' in scope) {
+          return Boolean(targetDepartmentId && assignDeptId === targetDepartmentId);
+        }
+        return Boolean(assignDeptId);
       }
       return Boolean(targetCollegeId ? assignCollegeId === targetCollegeId : true);
     case AUTHZ_SCOPES.DEFENSE:

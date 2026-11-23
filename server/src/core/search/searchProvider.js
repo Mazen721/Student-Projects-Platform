@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { SIMILAR_TITLE_LIMIT, SIMILAR_TITLE_THRESHOLD } from '@spp/shared/constants';
 import { normalizeArabic, trigramSimilarity } from '@spp/shared/text';
 import { env } from '../../config/env.js';
@@ -92,7 +93,7 @@ export async function findSimilarProjectTitles(
   const normalizedTitle = normalizeArabic(title);
   if (!normalizedTitle) return [];
 
-  const excludeClause = excludeId ? { _id: { $ne: excludeId } } : {};
+  const excludeClause = excludeId ? { _id: mongoose.trusted({ $ne: excludeId }) } : {};
 
   if (env.SEARCH_PROVIDER === 'atlas') {
     const pipeline = [
@@ -117,13 +118,18 @@ export async function findSimilarProjectTitles(
     return ProjectModel.aggregate(pipeline);
   }
 
-  let candidates = await ProjectModel.find({
-    ...excludeClause,
-    $text: { $search: normalizedTitle },
-  })
-    .select('_id title')
-    .limit(50)
-    .lean();
+  let candidates = [];
+  try {
+    candidates = await ProjectModel.find({
+      ...excludeClause,
+      $text: mongoose.trusted({ $search: normalizedTitle }),
+    })
+      .select('_id title')
+      .limit(50)
+      .lean();
+  } catch (err) {
+    if (err?.code !== 27) throw err;
+  }
 
   if (candidates.length === 0) {
     candidates = await ProjectModel.find(excludeClause).select('_id title').limit(50).lean();
@@ -176,7 +182,7 @@ export async function searchChannelMessages(
   const filter = {
     channelId,
     removed: null,
-    textNormalized: { $regex: escapeRegex(normalizedQuery), $options: 'i' },
+    textNormalized: mongoose.trusted({ $regex: escapeRegex(normalizedQuery), $options: 'i' }),
   };
   const [items, total] = await Promise.all([
     MessageModel.find(filter).sort({ createdAt: -1, _id: -1 }).skip(skip).limit(limit).lean(),

@@ -3,6 +3,8 @@ import {
   BarChart3,
   Bell,
   Building2,
+  ClipboardList,
+  FileSpreadsheet,
   FolderKanban,
   Home,
   Lightbulb,
@@ -48,10 +50,25 @@ function getRoleNavItems(roles = []) {
   if (
     roleNames.has(ROLES.UNIVERSITY_ADMIN) ||
     roleNames.has(ROLES.COLLEGE_ADMIN) ||
+    roleNames.has(ROLES.DEPARTMENT_ADMIN) ||
+    roleNames.has(ROLES.SUPERVISOR)
+  ) {
+    secondary.push({ to: '/app/projects/reviews', label: ar.projects.reviewQueue, icon: ClipboardList });
+  }
+
+  if (
+    roleNames.has(ROLES.UNIVERSITY_ADMIN) ||
+    roleNames.has(ROLES.COLLEGE_ADMIN) ||
     roleNames.has(ROLES.DEPARTMENT_ADMIN)
   ) {
+    secondary.push({ to: '/app/supervisors/load', label: ar.projects.supervisorLoad, icon: Users });
     secondary.push({ to: '/app/organization', label: ar.nav.organization, icon: Building2 });
     secondary.push({ to: '/app/users', label: ar.nav.users, icon: Users });
+    secondary.push({ to: '/app/audit-logs', label: ar.org.auditLogs, icon: ClipboardList });
+  }
+
+  if (roleNames.has(ROLES.UNIVERSITY_ADMIN) || roleNames.has(ROLES.COLLEGE_ADMIN)) {
+    secondary.push({ to: '/app/imports', label: ar.org.bulkImport, icon: FileSpreadsheet });
   }
 
   return { primary: items.slice(0, 4), secondary };

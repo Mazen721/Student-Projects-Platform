@@ -10,6 +10,10 @@ import { assertAllRoutesGuarded, publicRoute } from './core/authz/authorize.js';
 import { createAuthTokenRouter } from './core/auth/token.routes.js';
 import { createUploadRouter } from './core/uploads/upload.routes.js';
 import { errorHandler, notFoundHandler } from './core/errors/errorHandler.js';
+import { createAuthModuleRouter } from './modules/auth/auth.routes.js';
+import { createOrganizationRouter } from './modules/organization/organization.routes.js';
+import { createProjectsRouter } from './modules/projects/projects.routes.js';
+import { createTrackingRouter } from './modules/tracking/tracking.routes.js';
 
 export function createApp({ mountModuleRoutes } = {}) {
   const app = express();
@@ -37,6 +41,10 @@ export function createApp({ mountModuleRoutes } = {}) {
 
   app.use('/api/v1/auth', createAuthTokenRouter());
   app.use('/api/v1/uploads', createUploadRouter(limiters.uploadSignLimiter));
+  app.use('/api/v1', createAuthModuleRouter(limiters));
+  app.use('/api/v1', createOrganizationRouter(limiters));
+  app.use('/api/v1', createProjectsRouter(limiters));
+  app.use('/api/v1', createTrackingRouter(limiters));
 
   if (typeof mountModuleRoutes === 'function') {
     mountModuleRoutes(app, limiters);

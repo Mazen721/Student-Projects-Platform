@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { ROLES } from '@spp/shared/constants';
 import { AppError } from '../errors/AppError.js';
 
@@ -77,7 +78,7 @@ function filterForColleges(assignments) {
     if (collegeId) collegeIds.push(collegeId);
   }
   if (collegeIds.length === 0) return { _id: null };
-  return collegeIds.length === 1 ? { _id: collegeIds[0] } : { _id: { $in: collegeIds } };
+  return collegeIds.length === 1 ? { _id: collegeIds[0] } : { _id: mongoose.trusted({ $in: collegeIds }) };
 }
 
 function filterByCollegeOrDepartment(assignments) {
@@ -99,8 +100,16 @@ export function buildScopeFilter(user, action) {
   const assignments = Array.isArray(user?.roles) ? user.roles : [];
   if (!userId || assignments.length === 0) return { _id: null };
 
-  if (action.startsWith('project.') || action === 'supervision.viewLoad') {
+  if (action.startsWith('project.')) {
     return filterForProjects(assignments, userId);
+  }
+  if (action === 'idea.list') {
+    const primary = getEffectiveAssignment(user);
+    if (!primary || primary.role === ROLES.UNIVERSITY_ADMIN || primary.role === ROLES.INVESTOR) {
+      return {};
+    }
+    const collegeId = toIdString(primary.collegeId ?? primary.scopeId);
+    return collegeId ? { $or: [{ collegeId }, { collegeId: null }] } : {};
   }
   if (action === 'audit.list') {
     return filterForAuditLogs(assignments);
@@ -109,6 +118,7 @@ export function buildScopeFilter(user, action) {
     return filterForColleges(assignments);
   }
   if (
+    action === 'supervision.viewLoad' ||
     action.startsWith('user.') ||
     action.startsWith('report.') ||
     action.startsWith('defense.') ||
