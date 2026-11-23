@@ -9,6 +9,7 @@
     "test": "vitest run",
     "seed:admin": "node src/scripts/seed-admin.js",
     "seed:demo": "node src/scripts/seed-demo.js",
+    "seed:demo:reset": "node src/scripts/seed-demo.js --reset",
     "search:sync": "node src/scripts/sync-search-indexes.js"
   },
   "dependencies": {
