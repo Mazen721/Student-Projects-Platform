@@ -42,3 +42,17 @@ export const useAuthStore = create((set, get) => ({
     });
   },
 }));
+
+// The assignment the user is currently acting as. The API authorizes every
+// request against this context (x-role-context), so UI gating must use it
+// too — checking any assignment the user holds shows controls and pages
+// that belong to another post and fail or render empty under this context.
+export function useActiveAssignment() {
+  const roles = useAuthStore((s) => s.roles);
+  const activeRoleId = useAuthStore((s) => s.activeRoleId);
+  return roles.find((r) => String(r._id) === String(activeRoleId)) || roles[0] || null;
+}
+
+export function useActiveRole() {
+  return useActiveAssignment()?.role ?? null;
+}

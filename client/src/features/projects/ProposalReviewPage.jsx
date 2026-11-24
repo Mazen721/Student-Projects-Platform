@@ -5,7 +5,7 @@ import { CheckCircle2, ClipboardCheck } from 'lucide-react';
 import { PROPOSAL_STATUSES, ROLES } from '@spp/shared/constants';
 import ar, { t } from '@/locales/ar';
 import { getApiErrorMessage } from '@/lib/errors';
-import { useAuthStore } from '@/stores/authStore';
+import { useActiveRole } from '@/stores/authStore';
 import { useUiStore } from '@/stores/uiStore';
 import {
   Badge,
@@ -21,12 +21,12 @@ import { useProjectsQuery, useTransitionProposalMutation } from './projectsApi';
 import { getProposalStatusTone } from './statusTone';
 
 export default function ProposalReviewPage() {
-  const roles = useAuthStore((s) => s.roles);
+  const activeRole = useActiveRole();
   const addToast = useUiStore((s) => s.addToast);
 
-  const isSupervisor = roles.some((r) => r.role === ROLES.SUPERVISOR);
-  const isAdmin = roles.some((r) =>
-    [ROLES.UNIVERSITY_ADMIN, ROLES.COLLEGE_ADMIN, ROLES.DEPARTMENT_ADMIN].includes(r.role)
+  const isSupervisor = activeRole === ROLES.SUPERVISOR;
+  const isAdmin = [ROLES.UNIVERSITY_ADMIN, ROLES.COLLEGE_ADMIN, ROLES.DEPARTMENT_ADMIN].includes(
+    activeRole
   );
 
   const { data: submittedRes, isLoading: loadingSub } = useProjectsQuery({

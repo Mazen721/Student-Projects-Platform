@@ -15,9 +15,9 @@ export function RoleSwitcher({ compact = false }) {
 
   function handleChange(event) {
     setActiveRoleId(event.target.value);
-    queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-    queryClient.invalidateQueries({ queryKey: ['users'] });
-    queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
+    // Every query is authorized against the active context, so all cached
+    // data belongs to the previous post — invalidate everything.
+    queryClient.invalidateQueries();
   }
 
   return (

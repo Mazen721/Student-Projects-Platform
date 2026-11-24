@@ -4,7 +4,7 @@ import { ROLES } from '@spp/shared/constants';
 import ar from '@/locales/ar';
 import { getApiErrorMessage } from '@/lib/errors';
 import { formatRelativeTime } from '@/lib/format';
-import { useAuthStore } from '@/stores/authStore';
+import { useActiveRole } from '@/stores/authStore';
 import { useUiStore } from '@/stores/uiStore';
 import { Avatar, Button, CardSkeleton, Field, Input, Modal, Textarea } from '@/components/ui';
 import {
@@ -20,7 +20,6 @@ const ADMIN_ROLES = new Set([
 ]);
 
 export function CommentThread({ targetType, targetId, canWrite = true }) {
-  const roles = useAuthStore((s) => s.roles);
   const addToast = useUiStore((s) => s.addToast);
   const { data: comments = [], isLoading } = useCommentsQuery(targetType, targetId);
   const createMutation = useCreateCommentMutation();
@@ -31,7 +30,7 @@ export function CommentThread({ targetType, targetId, canWrite = true }) {
   const [removingId, setRemovingId] = useState(null);
   const [reason, setReason] = useState('');
 
-  const isAdmin = roles.some((r) => ADMIN_ROLES.has(r.role));
+  const isAdmin = ADMIN_ROLES.has(useActiveRole());
 
   async function handleSubmit(e) {
     e.preventDefault();

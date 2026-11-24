@@ -30,6 +30,7 @@ const sampleProject = {
   title: 'منصة إدارة الطاقة',
   status: 'approved',
   statusFlag: 'on_track',
+  team: { leaderId: 'stu1' },
   activeMemberIds: ['stu1'],
   supervisorIds: ['sup1'],
   supervision: { primaryId: 'sup1' },
@@ -163,6 +164,36 @@ describe('Phase 5 Tracking UI Flows', () => {
 
     fireEvent.change(screen.getByLabelText(/نقل إلى/), { target: { value: 'done' } });
     await waitFor(() => expect(currentCol).toBe('done'));
+  });
+
+  it('shows a read-only Kanban board to non-leader team members', async () => {
+    useAuthStore.getState().setSession({
+      accessToken: 'tok-stu2',
+      user: { id: 'stu2', name: 'يوسف', status: 'active', roles: [{ _id: 'r2', role: 'student' }] },
+    });
+
+    mswServer.use(
+      http.get('*/api/v1/projects/proj1/tasks', () =>
+        HttpResponse.json({
+          data: {
+            tasks: [{ id: 't1', title: 'بناء الواجهة', column: 'todo' }],
+            columns: {
+              todo: [{ id: 't1', title: 'بناء الواجهة', column: 'todo' }],
+              in_progress: [],
+              review: [],
+              done: [],
+            },
+          },
+        })
+      )
+    );
+
+    renderWithProviders(
+      <KanbanBoardPage project={{ ...sampleProject, activeMemberIds: ['stu1', 'stu2'] }} />
+    );
+    expect(await screen.findByText('بناء الواجهة')).toBeInTheDocument();
+    expect(screen.queryByLabelText(/نقل إلى/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /مهمة جديدة/ })).not.toBeInTheDocument();
   });
 
   it('displays BOM total budget and converts meeting action items to tasks', async () => {

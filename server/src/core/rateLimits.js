@@ -35,7 +35,11 @@ export function createRateLimiters() {
     max: 10,
     keyGenerator: (req) => {
       const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
-      return `${req.ip}:${email}`;
+      // Demo-login bodies carry an account key instead of an email; key on it
+      // so each demo account gets its own bucket instead of one shared
+      // per-IP bucket for every demo button.
+      const account = typeof req.body?.account === 'string' ? req.body.account.trim().toLowerCase() : '';
+      return `${req.ip}:${email || account}`;
     },
   });
 

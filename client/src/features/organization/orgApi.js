@@ -33,9 +33,10 @@ export function useUpdateUniversityMutation() {
   });
 }
 
-export function useCollegesQuery(params = {}) {
+export function useCollegesQuery(params = {}, options = {}) {
   return useQuery({
     queryKey: ['colleges', params],
+    enabled: options.enabled ?? true,
     queryFn: async () => {
       const res = await api.get('/colleges', { params });
       return res.data;
@@ -77,10 +78,10 @@ export function useDeactivateCollegeMutation() {
   });
 }
 
-export function useDepartmentsQuery(collegeId) {
+export function useDepartmentsQuery(collegeId, options = {}) {
   return useQuery({
     queryKey: ['colleges', collegeId, 'departments'],
-    enabled: Boolean(collegeId),
+    enabled: Boolean(collegeId) && (options.enabled ?? true),
     queryFn: async () => (await api.get(`/colleges/${collegeId}/departments`)).data,
   });
 }

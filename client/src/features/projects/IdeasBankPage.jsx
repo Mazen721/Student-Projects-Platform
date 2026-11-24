@@ -5,7 +5,7 @@ import { Lightbulb, Plus, Trash2 } from 'lucide-react';
 import { PROJECT_FIELD_VALUES, PROJECT_TYPE_VALUES, ROLES } from '@spp/shared/constants';
 import ar, { t } from '@/locales/ar';
 import { getApiErrorMessage } from '@/lib/errors';
-import { useAuthStore } from '@/stores/authStore';
+import { useActiveRole } from '@/stores/authStore';
 import { useUiStore } from '@/stores/uiStore';
 import {
   Badge,
@@ -30,13 +30,13 @@ import {
 
 export default function IdeasBankPage() {
   const navigate = useNavigate();
-  const roles = useAuthStore((s) => s.roles);
+  const activeRole = useActiveRole();
   const addToast = useUiStore((s) => s.addToast);
 
-  const canCreateIdea = roles.some((r) => [ROLES.SUPERVISOR, ROLES.INVESTOR].includes(r.role));
-  const isStudent = roles.some((r) => r.role === ROLES.STUDENT);
-  const isAdmin = roles.some((r) =>
-    [ROLES.UNIVERSITY_ADMIN, ROLES.COLLEGE_ADMIN, ROLES.DEPARTMENT_ADMIN].includes(r.role)
+  const canCreateIdea = [ROLES.SUPERVISOR, ROLES.INVESTOR].includes(activeRole);
+  const isStudent = activeRole === ROLES.STUDENT;
+  const isAdmin = [ROLES.UNIVERSITY_ADMIN, ROLES.COLLEGE_ADMIN, ROLES.DEPARTMENT_ADMIN].includes(
+    activeRole
   );
 
   const [fieldFilter, setFieldFilter] = useState('');

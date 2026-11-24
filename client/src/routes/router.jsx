@@ -45,7 +45,7 @@ const ProjectMiniSitePage = lazy(() => import('@/features/showcase/ProjectMiniSi
 const CompetitionsPage = lazy(() => import('@/features/showcase/CompetitionsPage'));
 const FlaggedVotesPage = lazy(() => import('@/features/showcase/FlaggedVotesPage'));
 const InvestorWorkspacePage = lazy(() => import('@/features/showcase/InvestorWorkspacePage'));
-const AnalyticsDashboardPage = lazy(() => import('@/features/reports/AnalyticsDashboardPage'));
+const ReportsHomePage = lazy(() => import('@/features/reports/ReportsHomePage'));
 const SupervisorDashboardPage = lazy(() => import('@/features/reports/SupervisorDashboardPage'));
 const ProjectReportsPage = lazy(() => import('@/features/reports/ProjectReportsPage'));
 const CompletionReportPage = lazy(() => import('@/features/reports/CompletionReportPage'));
@@ -103,6 +103,7 @@ const COLLEGE_OR_UNI_ADMIN = [ROLES.UNIVERSITY_ADMIN, ROLES.COLLEGE_ADMIN];
 const REVIEW_ROLES = [ROLES.SUPERVISOR, ...ADMIN_ROLES];
 const DEFENSE_ROLES = [ROLES.SUPERVISOR, ROLES.COMMITTEE_MEMBER, ...ADMIN_ROLES];
 const IDEAS_ROLES = [ROLES.STUDENT, ROLES.SUPERVISOR, ROLES.INVESTOR, ...ADMIN_ROLES];
+const WORKSPACE_ROLES = [ROLES.STUDENT, ROLES.SUPERVISOR, ...ADMIN_ROLES];
 
 export const router = createBrowserRouter([
   {
@@ -140,13 +141,23 @@ export const router = createBrowserRouter([
             children: [
               { index: true, element: <LazyRoute><HomeDashboardPage /></LazyRoute> },
               { path: 'profile', element: <LazyRoute><ProfilePage /></LazyRoute> },
-              { path: 'chat', element: <LazyRoute><ProjectChatPage /></LazyRoute> },
               { path: 'notifications', element: <LazyRoute><NotificationCenter /></LazyRoute> },
               { path: 'announcements', element: <LazyRoute><AnnouncementsPage /></LazyRoute> },
-              { path: 'investor', element: <LazyRoute><InvestorWorkspacePage /></LazyRoute> },
               { path: 'challenges', element: <LazyRoute><InvestorWorkspacePage initialTab="challenges" /></LazyRoute> },
-              { path: 'projects', element: <LazyRoute><ProjectsListPage /></LazyRoute> },
-              { path: 'projects/:id', element: <LazyRoute><ProjectOverviewPage /></LazyRoute> },
+              {
+                element: <RequireRole allowedRoles={[ROLES.INVESTOR]} />,
+                children: [
+                  { path: 'investor', element: <LazyRoute><InvestorWorkspacePage /></LazyRoute> },
+                ],
+              },
+              {
+                element: <RequireRole allowedRoles={WORKSPACE_ROLES} />,
+                children: [
+                  { path: 'chat', element: <LazyRoute><ProjectChatPage /></LazyRoute> },
+                  { path: 'projects', element: <LazyRoute><ProjectsListPage /></LazyRoute> },
+                  { path: 'projects/:id', element: <LazyRoute><ProjectOverviewPage /></LazyRoute> },
+                ],
+              },
               {
                 element: <RequireRole allowedRoles={[ROLES.STUDENT]} />,
                 children: [
@@ -199,7 +210,7 @@ export const router = createBrowserRouter([
               {
                 element: <RequireRole allowedRoles={REVIEW_ROLES} />,
                 children: [
-                  { path: 'reports', element: <LazyRoute><AnalyticsDashboardPage /></LazyRoute> },
+                  { path: 'reports', element: <LazyRoute><ReportsHomePage /></LazyRoute> },
                 ],
               },
               {

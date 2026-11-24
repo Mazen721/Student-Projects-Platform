@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { ROLES } from '@spp/shared/constants';
 import ar from '@/locales/ar';
-import { useAuthStore } from '@/stores/authStore';
+import { useActiveRole } from '@/stores/authStore';
 
 const ADMIN_ROLES = new Set([
   ROLES.UNIVERSITY_ADMIN,
@@ -10,14 +10,15 @@ const ADMIN_ROLES = new Set([
 ]);
 
 export function ReportsSubNav() {
-  const roles = useAuthStore((s) => s.roles);
-  const hasAdmin = roles.some((r) => ADMIN_ROLES.has(r.role));
-  const hasSupervisor = roles.some((r) => r.role === ROLES.SUPERVISOR);
+  const activeRole = useActiveRole();
+  const hasAdmin = ADMIN_ROLES.has(activeRole);
+  const hasSupervisor = activeRole === ROLES.SUPERVISOR;
 
-  const tabs = [{ to: '/app/reports', label: ar.reports.dashboard, end: true }];
+  const tabs = [];
 
   if (hasAdmin) {
     tabs.push(
+      { to: '/app/reports', label: ar.reports.dashboard, end: true },
       { to: '/app/reports/projects', label: ar.reports.projects },
       { to: '/app/reports/completion', label: ar.reports.completion },
       { to: '/app/reports/supervisors', label: ar.reports.supervisors },

@@ -113,9 +113,12 @@ export const POLICIES = Object.freeze({
     { relationship: 'teamMember' },
     { relationship: 'anySupervisor' },
   ],
-  'task.create': [{ relationship: 'teamMember' }],
-  'task.update': [{ relationship: 'teamMember' }],
-  'task.delete': [{ relationship: 'teamMember' }],
+  // Kanban management is leader-only (product decision 2026-11-24, owner
+  // request): members keep read access via task.list, but creating, moving,
+  // editing and deleting tasks is reserved for the team leader.
+  'task.create': [{ relationship: 'leader' }],
+  'task.update': [{ relationship: 'leader' }],
+  'task.delete': [{ relationship: 'leader' }],
   'bom.read': [
     { roles: STAFF_ADMINS, scope: AUTHZ_SCOPES.DEPARTMENT },
     { relationship: 'teamMember' },

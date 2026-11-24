@@ -5,7 +5,7 @@ import { Plus, Settings } from 'lucide-react';
 import { ORG_STATUSES, ROLES } from '@spp/shared/constants';
 import ar, { t } from '@/locales/ar';
 import { getApiErrorMessage } from '@/lib/errors';
-import { useAuthStore } from '@/stores/authStore';
+import { useActiveRole } from '@/stores/authStore';
 import { useUiStore } from '@/stores/uiStore';
 import {
   Badge,
@@ -28,8 +28,8 @@ import {
 } from './orgApi';
 
 export default function CollegesPage() {
-  const roles = useAuthStore((s) => s.roles);
-  const isUniAdmin = roles.some((r) => r.role === ROLES.UNIVERSITY_ADMIN);
+  const activeRole = useActiveRole();
+  const isUniAdmin = activeRole === ROLES.UNIVERSITY_ADMIN;
   const addToast = useUiStore((s) => s.addToast);
 
   const { data: university } = useUniversityQuery(isUniAdmin);

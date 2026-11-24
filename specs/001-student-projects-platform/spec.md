@@ -513,6 +513,9 @@ and Excel with matching figures.
   submission; submissions after the due date MUST be flagged late.
 - **FR-054**: Each team MUST have a Kanban board (columns: to do, in progress, review, done) with
   tasks assignable to members, due dates and comments.
+  *(Amendment 2026-11-24, product-owner decision: task management — create, move, edit, delete —
+  is restricted to the team leader; other members have read-only access to the board. Task
+  comments remain open to all team members.)*
 - **FR-055**: Teams MUST maintain a hardware bill of materials (item, quantity, specs, unit price,
   supplier, status: needed/ordered/received) and a software/tools list (languages, frameworks,
   libraries, services); the system MUST compute an estimated total budget.

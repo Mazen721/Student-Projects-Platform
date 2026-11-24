@@ -107,6 +107,15 @@ describe('P3 Authorization Matrix (Tracking)', () => {
       departmentId: deptB._id,
       roles: [{ role: ROLES.STUDENT, scopeType: SCOPE_TYPES.DEPARTMENT, scopeId: deptB._id, collegeId: collegeB._id, departmentId: deptB._id }],
     });
+    const studentMember = await createU({
+      name: 'طالب عضو بالفريق',
+      email: 'st3@mnu.edu.eg',
+      studentId: '2026503',
+      accountType: 'student',
+      collegeId: collegeA._id,
+      departmentId: deptA._id,
+      roles: [{ role: ROLES.STUDENT, scopeType: SCOPE_TYPES.DEPARTMENT, scopeId: deptA._id, collegeId: collegeA._id, departmentId: deptA._id }],
+    });
 
     tokens = {
       collegeAdminA: signAccessToken(collegeAdminA),
@@ -115,6 +124,7 @@ describe('P3 Authorization Matrix (Tracking)', () => {
       primarySup: signAccessToken(primarySup),
       coSup: signAccessToken(coSup),
       studentTeam: signAccessToken(studentTeam),
+      studentMember: signAccessToken(studentMember),
       outsiderStudent: signAccessToken(outsiderStudent),
     };
 
@@ -142,9 +152,12 @@ describe('P3 Authorization Matrix (Tracking)', () => {
       status: PROPOSAL_STATUSES.APPROVED,
       team: {
         leaderId: studentTeam._id,
-        members: [{ userId: studentTeam._id, role: 'leader', status: 'active' }],
+        members: [
+          { userId: studentTeam._id, role: 'leader', status: 'active' },
+          { userId: studentMember._id, role: 'member', status: 'active' },
+        ],
       },
-      activeMemberIds: [studentTeam._id],
+      activeMemberIds: [studentTeam._id, studentMember._id],
       supervision: {
         primaryId: primarySup._id,
         coSupervisorIds: [coSup._id],
@@ -199,6 +212,14 @@ describe('P3 Authorization Matrix (Tracking)', () => {
       createdBy: studentTeam._id,
     });
 
+    const taskForMember = await Task.create({
+      projectId: project._id,
+      title: 'مهمة اختبار العضو',
+      column: 'todo',
+      order: 'a1',
+      createdBy: studentTeam._id,
+    });
+
     const bomItem = await BOMItem.create({
       projectId: project._id,
       collegeId: collegeA._id,
@@ -227,6 +248,7 @@ describe('P3 Authorization Matrix (Tracking)', () => {
       deliverableId: String(deliverable._id),
       submissionId: String(submission._id),
       taskId: String(task._id),
+      taskForMemberId: String(taskForMember._id),
       bomItemId: String(bomItem._id),
       meetingId: String(meeting._id),
     };
@@ -327,6 +349,31 @@ describe('P3 Authorization Matrix (Tracking)', () => {
       url: () => `/api/v1/tasks/${resources.taskId}`,
       allow: 'studentTeam',
       deny: 'outsiderStudent',
+    },
+    {
+      // Leader-only task management (2026-11-24): a plain team member is
+      // denied create/update/delete even though he can read the board.
+      name: 'task.create (member denied)',
+      method: 'post',
+      url: () => `/api/v1/projects/${resources.projectId}/tasks`,
+      body: { title: 'مهمة من العضو', column: 'todo' },
+      allow: 'studentTeam',
+      deny: 'studentMember',
+    },
+    {
+      name: 'task.update (member denied)',
+      method: 'patch',
+      url: () => `/api/v1/tasks/${resources.taskForMemberId}`,
+      body: { column: 'in_progress' },
+      allow: 'studentTeam',
+      deny: 'studentMember',
+    },
+    {
+      name: 'task.delete (member denied)',
+      method: 'delete',
+      url: () => `/api/v1/tasks/${resources.taskForMemberId}`,
+      allow: 'studentTeam',
+      deny: 'studentMember',
     },
     {
       name: 'bom.read',

@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 
-export function useProjectsQuery(params = {}) {
+export function useProjectsQuery(params = {}, options = {}) {
   return useQuery({
     queryKey: ['projects', params],
+    enabled: options.enabled ?? true,
     queryFn: async () => (await api.get('/projects', { params })).data,
   });
 }

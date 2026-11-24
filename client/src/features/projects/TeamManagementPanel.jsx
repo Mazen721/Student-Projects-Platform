@@ -3,7 +3,7 @@ import { Copy, Crown, Link2, UserMinus, UserPlus } from 'lucide-react';
 import { PROPOSAL_STATUSES, ROLES } from '@spp/shared/constants';
 import ar from '@/locales/ar';
 import { getApiErrorMessage } from '@/lib/errors';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore, useActiveRole } from '@/stores/authStore';
 import { useUiStore } from '@/stores/uiStore';
 import { Avatar, Badge, Button, Card, Field, Input, Modal, Select } from '@/components/ui';
 import {
@@ -16,7 +16,7 @@ import {
 
 export function TeamManagementPanel({ project }) {
   const user = useAuthStore((s) => s.user);
-  const roles = useAuthStore((s) => s.roles);
+  const activeRole = useActiveRole();
   const addToast = useUiStore((s) => s.addToast);
 
   const [searchText, setSearchText] = useState('');
@@ -27,8 +27,8 @@ export function TeamManagementPanel({ project }) {
 
   const isLeader = String(project.team?.leaderId) === String(user?.id);
   const isMember = (project.activeMemberIds || []).includes(String(user?.id));
-  const isAdmin = roles.some((r) =>
-    [ROLES.UNIVERSITY_ADMIN, ROLES.COLLEGE_ADMIN, ROLES.DEPARTMENT_ADMIN].includes(r.role)
+  const isAdmin = [ROLES.UNIVERSITY_ADMIN, ROLES.COLLEGE_ADMIN, ROLES.DEPARTMENT_ADMIN].includes(
+    activeRole
   );
   const preApproval = ![
     PROPOSAL_STATUSES.APPROVED,

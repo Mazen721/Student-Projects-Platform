@@ -1,8 +1,12 @@
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import ar from '@/locales/ar';
+import { useAuthStore } from '@/stores/authStore';
 import { ToastContainer } from '@/components/ui';
 
 export function PublicLayout() {
+  const user = useAuthStore((s) => s.user);
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const isSignedIn = Boolean(user && accessToken);
   return (
     <div className="flex min-h-dvh flex-col bg-app-bg text-ink">
       <a
@@ -49,12 +53,21 @@ export function PublicLayout() {
             >
               {ar.nav.competitions}
             </NavLink>
-            <Link
-              to="/login"
-              className="inline-flex min-h-11 items-center justify-center rounded-xl bg-gold px-4 py-2 text-sm font-extrabold text-navy transition hover:bg-gold-light"
-            >
-              {ar.nav.login}
-            </Link>
+            {isSignedIn ? (
+              <Link
+                to="/app"
+                className="inline-flex min-h-11 items-center justify-center rounded-xl bg-gold px-4 py-2 text-sm font-extrabold text-navy transition hover:bg-gold-light"
+              >
+                {ar.nav.goToApp}
+              </Link>
+            ) : (
+              <Link
+                to="/login"
+                className="inline-flex min-h-11 items-center justify-center rounded-xl bg-gold px-4 py-2 text-sm font-extrabold text-navy transition hover:bg-gold-light"
+              >
+                {ar.nav.login}
+              </Link>
+            )}
           </nav>
         </div>
       </header>

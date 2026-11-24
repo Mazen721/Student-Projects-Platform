@@ -4,7 +4,7 @@ import { Copy, Link2 } from 'lucide-react';
 import { ROLES, SCOPE_TYPES, USER_STATUSES } from '@spp/shared/constants';
 import ar, { t } from '@/locales/ar';
 import { getApiErrorMessage } from '@/lib/errors';
-import { useAuthStore } from '@/stores/authStore';
+import { useActiveRole } from '@/stores/authStore';
 import { useUiStore } from '@/stores/uiStore';
 import {
   Badge,
@@ -33,8 +33,8 @@ import {
 } from './orgApi';
 
 export default function UsersAdminPage() {
-  const roles = useAuthStore((s) => s.roles);
-  const isUniAdmin = roles.some((r) => r.role === ROLES.UNIVERSITY_ADMIN);
+  const activeRole = useActiveRole();
+  const isUniAdmin = activeRole === ROLES.UNIVERSITY_ADMIN;
   const addToast = useUiStore((s) => s.addToast);
 
   const [tab, setTab] = useState('users');

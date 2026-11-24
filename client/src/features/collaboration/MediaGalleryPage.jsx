@@ -9,7 +9,7 @@ import {
 } from '@spp/shared/constants';
 import ar from '@/locales/ar';
 import { getApiErrorMessage } from '@/lib/errors';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore, useActiveRole } from '@/stores/authStore';
 import { useUiStore } from '@/stores/uiStore';
 import {
   Badge,
@@ -107,7 +107,6 @@ function VideoTile({ link, caption }) {
 
 export function MediaGalleryPage({ project }) {
   const user = useAuthStore((s) => s.user);
-  const roles = useAuthStore((s) => s.roles);
   const addToast = useUiStore((s) => s.addToast);
 
   const { data: albums = [], isLoading } = useProjectAlbumsQuery(project?.id);
@@ -131,7 +130,7 @@ export function MediaGalleryPage({ project }) {
   const isTeamMember = (project?.activeMemberIds || []).some(
     (id) => String(id) === String(user?.id)
   );
-  const isAdmin = roles.some((r) => ADMIN_ROLES.has(r.role));
+  const isAdmin = ADMIN_ROLES.has(useActiveRole());
   const isWritable = project?.status !== PROPOSAL_STATUSES.ARCHIVED;
   const canEditMedia = isTeamMember && isWritable;
 

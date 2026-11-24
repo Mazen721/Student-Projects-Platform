@@ -159,8 +159,9 @@ export function KanbanBoardPage({ project }) {
 
   const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor));
 
-  const isTeamMember = (project.activeMemberIds || []).includes(String(user?.id));
-  const canWrite = isTeamMember && project.status !== PROPOSAL_STATUSES.ARCHIVED;
+  // Task management is leader-only; other team members get a read-only board.
+  const isLeader = String(project.team?.leaderId ?? project.leaderId) === String(user?.id);
+  const canWrite = isLeader && project.status !== PROPOSAL_STATUSES.ARCHIVED;
 
   if (isLoading) return <CardSkeleton />;
 
@@ -187,6 +188,7 @@ export function KanbanBoardPage({ project }) {
   }
 
   function handleDragEnd(event) {
+    if (!canWrite) return;
     const { active, over } = event;
     if (!over || !TASK_COLUMN_VALUES.includes(String(over.id))) return;
     const task = (data?.tasks || []).find((tItem) => tItem.id === String(active.id));

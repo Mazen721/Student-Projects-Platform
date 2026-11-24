@@ -6,7 +6,7 @@ import { DEFENSE_STATES, ROLES } from '@spp/shared/constants';
 import ar, { t } from '@/locales/ar';
 import { getApiErrorMessage } from '@/lib/errors';
 import { formatDateTime } from '@/lib/format';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore, useActiveRole } from '@/stores/authStore';
 import { useUiStore } from '@/stores/uiStore';
 import {
   Badge,
@@ -50,11 +50,10 @@ function getDefenseTone(state) {
 
 export function ProjectDefensePanel({ project }) {
   const user = useAuthStore((s) => s.user);
-  const roles = useAuthStore((s) => s.roles);
   const addToast = useUiStore((s) => s.addToast);
 
   const isPrimarySup = String(project.supervision?.primaryId || '') === String(user?.id || '');
-  const isAdmin = roles.some((r) => ADMIN_ROLES.has(r.role));
+  const isAdmin = ADMIN_ROLES.has(useActiveRole());
 
   const { data: eligibility, isLoading } = useDefenseEligibilityQuery(project.id);
   const { data: examiners = [] } = useAvailableExaminersQuery(project.id, isAdmin);

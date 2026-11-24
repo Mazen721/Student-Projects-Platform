@@ -11,7 +11,7 @@ import {
 import ar, { t } from '@/locales/ar';
 import { getApiErrorMessage } from '@/lib/errors';
 import { formatDateTime, formatNumber } from '@/lib/format';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore, useActiveRole } from '@/stores/authStore';
 import { useUiStore } from '@/stores/uiStore';
 import {
   Badge,
@@ -42,14 +42,13 @@ const ADMIN_ROLES = new Set([
 export default function GradingWorkspacePage() {
   const { id: defenseId } = useParams();
   const user = useAuthStore((s) => s.user);
-  const roles = useAuthStore((s) => s.roles);
   const addToast = useUiStore((s) => s.addToast);
 
   const { data: defense, isLoading } = useDefenseQuery(defenseId);
   const isChair = String(defense?.chairId || '') === String(user?.id || '');
   const isSupervisor = String(defense?.supervisorId || '') === String(user?.id || '');
   const isExaminer = (defense?.examinerIds || []).includes(String(user?.id || ''));
-  const isAdmin = roles.some((r) => ADMIN_ROLES.has(r.role));
+  const isAdmin = ADMIN_ROLES.has(useActiveRole());
 
   const canScore = Boolean(defense && (isSupervisor || isExaminer));
   const { data: scoresheet } = useMyScoresheetQuery(canScore ? defenseId : null);

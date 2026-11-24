@@ -28,19 +28,37 @@ import { useAuthStore } from '@/stores/authStore';
 import { useUiStore } from '@/stores/uiStore';
 import { Avatar, Drawer, ToastContainer } from '@/components/ui';
 
-function getRoleNavItems(roles = []) {
-  const roleNames = new Set(roles.map((r) => r.role));
-  const items = [
-    { to: '/app', label: ar.nav.home, icon: Home, end: true },
-    { to: '/app/projects', label: ar.nav.projects, icon: FolderKanban },
-    { to: '/app/chat', label: ar.nav.chat, icon: MessageSquare },
-  ];
+const WORKSPACE_ROLES = new Set([
+  ROLES.UNIVERSITY_ADMIN,
+  ROLES.COLLEGE_ADMIN,
+  ROLES.DEPARTMENT_ADMIN,
+  ROLES.SUPERVISOR,
+  ROLES.STUDENT,
+]);
+const IDEAS_ROLES = new Set([...WORKSPACE_ROLES, ROLES.INVESTOR]);
+
+// Navigation is built from the ACTIVE role context only — the same context
+// the API authorizes against. A user holding several posts (e.g. supervisor
+// + department admin) sees exactly the workspace of the post he is acting
+// as; his other posts' pages appear when he switches context, instead of
+// showing links that render empty under the wrong context.
+function getRoleNavItems(activeRole) {
+  const is = (role) => activeRole === role;
+  const inSet = (set) => (activeRole ? set.has(activeRole) : false);
+  const items = [{ to: '/app', label: ar.nav.home, icon: Home, end: true }];
+
+  // Projects and chat are workspace surfaces: visitors, investors and
+  // committee-only accounts cannot use them, so don't offer dead links.
+  if (inSet(WORKSPACE_ROLES)) {
+    items.push({ to: '/app/projects', label: ar.nav.projects, icon: FolderKanban });
+    items.push({ to: '/app/chat', label: ar.nav.chat, icon: MessageSquare });
+  }
 
   if (
-    roleNames.has(ROLES.UNIVERSITY_ADMIN) ||
-    roleNames.has(ROLES.COLLEGE_ADMIN) ||
-    roleNames.has(ROLES.DEPARTMENT_ADMIN) ||
-    roleNames.has(ROLES.SUPERVISOR)
+    is(ROLES.UNIVERSITY_ADMIN) ||
+    is(ROLES.COLLEGE_ADMIN) ||
+    is(ROLES.DEPARTMENT_ADMIN) ||
+    is(ROLES.SUPERVISOR)
   ) {
     items.push({ to: '/app/reports', label: ar.nav.reports, icon: BarChart3 });
   } else {
@@ -49,13 +67,15 @@ function getRoleNavItems(roles = []) {
 
   const secondary = [
     { to: '/app/announcements', label: ar.chat.announcements, icon: Megaphone },
-    { to: '/app/ideas', label: ar.nav.ideas, icon: Lightbulb },
+    ...(inSet(IDEAS_ROLES)
+      ? [{ to: '/app/ideas', label: ar.nav.ideas, icon: Lightbulb }]
+      : []),
     { to: '/app/challenges', label: ar.showcase.challenges, icon: Briefcase },
     { to: '/competitions', label: ar.nav.competitions, icon: Trophy },
     { to: '/app/profile', label: ar.nav.profile, icon: User },
   ];
 
-  if (roleNames.has(ROLES.INVESTOR)) {
+  if (is(ROLES.INVESTOR)) {
     secondary.unshift({
       to: '/app/investor',
       label: ar.showcase.investorWorkspaceTitle,
@@ -63,7 +83,7 @@ function getRoleNavItems(roles = []) {
     });
   }
 
-  if (roleNames.has(ROLES.SUPERVISOR)) {
+  if (is(ROLES.SUPERVISOR)) {
     secondary.push({
       to: '/app/reports/supervisor',
       label: ar.reports.supervisorDashboard,
@@ -72,36 +92,32 @@ function getRoleNavItems(roles = []) {
   }
 
   if (
-    roleNames.has(ROLES.UNIVERSITY_ADMIN) ||
-    roleNames.has(ROLES.COLLEGE_ADMIN) ||
-    roleNames.has(ROLES.DEPARTMENT_ADMIN) ||
-    roleNames.has(ROLES.SUPERVISOR)
+    is(ROLES.UNIVERSITY_ADMIN) ||
+    is(ROLES.COLLEGE_ADMIN) ||
+    is(ROLES.DEPARTMENT_ADMIN) ||
+    is(ROLES.SUPERVISOR)
   ) {
     secondary.push({ to: '/app/projects/reviews', label: ar.projects.reviewQueue, icon: ClipboardList });
   }
 
   if (
-    roleNames.has(ROLES.UNIVERSITY_ADMIN) ||
-    roleNames.has(ROLES.COLLEGE_ADMIN) ||
-    roleNames.has(ROLES.DEPARTMENT_ADMIN) ||
-    roleNames.has(ROLES.SUPERVISOR) ||
-    roleNames.has(ROLES.COMMITTEE_MEMBER)
+    is(ROLES.UNIVERSITY_ADMIN) ||
+    is(ROLES.COLLEGE_ADMIN) ||
+    is(ROLES.DEPARTMENT_ADMIN) ||
+    is(ROLES.SUPERVISOR) ||
+    is(ROLES.COMMITTEE_MEMBER)
   ) {
     secondary.push({ to: '/app/defenses', label: ar.evaluation.defenseCalendar, icon: ClipboardList });
   }
 
-  if (
-    roleNames.has(ROLES.UNIVERSITY_ADMIN) ||
-    roleNames.has(ROLES.COLLEGE_ADMIN) ||
-    roleNames.has(ROLES.DEPARTMENT_ADMIN)
-  ) {
+  if (is(ROLES.UNIVERSITY_ADMIN) || is(ROLES.COLLEGE_ADMIN) || is(ROLES.DEPARTMENT_ADMIN)) {
     secondary.push({ to: '/app/supervisors/load', label: ar.projects.supervisorLoad, icon: Users });
     secondary.push({ to: '/app/organization', label: ar.nav.organization, icon: Building2 });
     secondary.push({ to: '/app/users', label: ar.nav.users, icon: Users });
     secondary.push({ to: '/app/audit-logs', label: ar.org.auditLogs, icon: ClipboardList });
   }
 
-  if (roleNames.has(ROLES.UNIVERSITY_ADMIN) || roleNames.has(ROLES.COLLEGE_ADMIN)) {
+  if (is(ROLES.UNIVERSITY_ADMIN) || is(ROLES.COLLEGE_ADMIN)) {
     secondary.push({ to: '/app/reevaluations', label: ar.evaluation.reevaluationQueue, icon: ClipboardList });
     secondary.push({ to: '/app/votes/flagged', label: ar.showcase.flaggedVotesTitle, icon: ShieldAlert });
     secondary.push({ to: '/app/imports', label: ar.org.bulkImport, icon: FileSpreadsheet });
@@ -115,6 +131,7 @@ export function AppLayout({ unreadCount: unreadCountProp, roleSwitcherSlot = nul
   const user = useAuthStore((s) => s.user);
   const accessToken = useAuthStore((s) => s.accessToken);
   const roles = useAuthStore((s) => s.roles);
+  const activeRoleId = useAuthStore((s) => s.activeRoleId);
   const clearSession = useAuthStore((s) => s.clearSession);
   const moreDrawerOpen = useUiStore((s) => s.moreDrawerOpen);
   const setMoreDrawerOpen = useUiStore((s) => s.setMoreDrawerOpen);
@@ -152,7 +169,9 @@ export function AppLayout({ unreadCount: unreadCountProp, roleSwitcherSlot = nul
     };
   }, [accessToken, unreadCountProp]);
 
-  const { primary, secondary } = getRoleNavItems(roles);
+  const activeAssignment =
+    roles.find((r) => String(r._id) === String(activeRoleId)) || roles[0] || null;
+  const { primary, secondary } = getRoleNavItems(activeAssignment?.role);
 
   async function handleLogout() {
     try {

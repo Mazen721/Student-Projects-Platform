@@ -36,17 +36,22 @@ const PUBLISH_ROLES = new Set([
 export default function AnnouncementsPage() {
   const user = useAuthStore((s) => s.user);
   const roles = useAuthStore((s) => s.roles);
+  const activeRoleId = useAuthStore((s) => s.activeRoleId);
   const addToast = useUiStore((s) => s.addToast);
 
   const [page, setPage] = useState(1);
   const { data, isLoading } = useAnnouncementsQuery({ page });
   const createMutation = useCreateAnnouncementMutation();
 
-  const canPublish = roles.some((r) => PUBLISH_ROLES.has(r.role));
-  const isUniAdmin = roles.some((r) => r.role === ROLES.UNIVERSITY_ADMIN);
-  const isCollegeAdmin = roles.some((r) => r.role === ROLES.COLLEGE_ADMIN);
-  const isDeptAdmin = roles.some((r) => r.role === ROLES.DEPARTMENT_ADMIN);
-  const isSupervisor = roles.some((r) => r.role === ROLES.SUPERVISOR);
+  // Publish rights and scopes follow the ACTIVE role context — the context
+  // the API authorizes against — not any other post the user happens to hold.
+  const activeAssignment =
+    roles.find((r) => String(r._id) === String(activeRoleId)) || roles[0] || null;
+  const canPublish = Boolean(activeAssignment && PUBLISH_ROLES.has(activeAssignment.role));
+  const isUniAdmin = activeAssignment?.role === ROLES.UNIVERSITY_ADMIN;
+  const isCollegeAdmin = activeAssignment?.role === ROLES.COLLEGE_ADMIN;
+  const isDeptAdmin = activeAssignment?.role === ROLES.DEPARTMENT_ADMIN;
+  const isSupervisor = activeAssignment?.role === ROLES.SUPERVISOR;
 
   const defaultScope = isUniAdmin
     ? SCOPE_TYPES.UNIVERSITY
@@ -63,10 +68,18 @@ export default function AnnouncementsPage() {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
 
-  const { data: collegesRes } = useCollegesQuery({ limit: 100 });
-  const { data: departmentsRes } = useDepartmentsQuery(collegeId);
+  // Colleges/departments only feed the publish form's college/department
+  // scope pickers. The endpoints authorize against the ACTIVE role context,
+  // so only fetch when the active role is a staff admin — otherwise the
+  // calls are doomed 403s (e.g. a supervisor who also holds an admin role
+  // but is currently acting as a supervisor).
+  const canPickOrgScope = [ROLES.UNIVERSITY_ADMIN, ROLES.COLLEGE_ADMIN, ROLES.DEPARTMENT_ADMIN].includes(
+    activeAssignment?.role
+  );
+  const { data: collegesRes } = useCollegesQuery({ limit: 100 }, { enabled: canPickOrgScope });
+  const { data: departmentsRes } = useDepartmentsQuery(collegeId, { enabled: canPickOrgScope });
   const colleges = collegesRes?.data || [];
-  const departments = departmentsRes || [];
+  const departments = departmentsRes?.data || [];
 
   async function handlePublish(e) {
     e.preventDefault();

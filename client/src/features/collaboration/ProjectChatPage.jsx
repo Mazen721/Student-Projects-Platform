@@ -18,7 +18,7 @@ import ar, { t } from '@/locales/ar';
 import { getApiErrorMessage } from '@/lib/errors';
 import { formatDateTime, formatNumber } from '@/lib/format';
 import { connectSocket, getSocket } from '@/lib/socket';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore, useActiveRole } from '@/stores/authStore';
 import { useUiStore } from '@/stores/uiStore';
 import {
   Avatar,
@@ -141,7 +141,6 @@ function MessageBubble({ msg, isMine, isAdmin, onReply, onModerate }) {
 export default function ProjectChatPage({ project = null }) {
   const qc = useQueryClient();
   const user = useAuthStore((s) => s.user);
-  const roles = useAuthStore((s) => s.roles);
   const addToast = useUiStore((s) => s.addToast);
 
   const isProjectView = Boolean(project?.id);
@@ -184,7 +183,7 @@ export default function ProjectChatPage({ project = null }) {
   const [directTargetId, setDirectTargetId] = useState('');
   const lastTypingEmitRef = useRef(0);
 
-  const isAdmin = roles.some((r) => ADMIN_ROLES.has(r.role));
+  const isAdmin = ADMIN_ROLES.has(useActiveRole());
   const isTeamMember = (project?.activeMemberIds || []).some(
     (id) => String(id) === String(user?.id)
   );
@@ -379,7 +378,7 @@ export default function ProjectChatPage({ project = null }) {
         <EmptyState icon={MessageSquare} title={ar.chat.noChannels} />
       ) : (
         <div className="grid gap-4 lg:grid-cols-12">
-          <aside className="space-y-2 lg:col-span-4">
+          <aside className="min-w-0 space-y-2 lg:col-span-4">
             <Card>
               <div className="space-y-2">
                 {project && directCandidates.length > 0 && (
@@ -427,7 +426,7 @@ export default function ProjectChatPage({ project = null }) {
             </Card>
           </aside>
 
-          <section className="lg:col-span-8">
+          <section className="min-w-0 lg:col-span-8">
             <Card
               title={activeChannel ? getChannelLabel(activeChannel) : ar.chat.selectChannel}
               actions={

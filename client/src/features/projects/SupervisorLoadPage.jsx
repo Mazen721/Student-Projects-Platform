@@ -5,7 +5,7 @@ import { ROLES } from '@spp/shared/constants';
 import ar from '@/locales/ar';
 import { getApiErrorMessage } from '@/lib/errors';
 import { formatNumber } from '@/lib/format';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore, useActiveRole } from '@/stores/authStore';
 import { useUiStore } from '@/stores/uiStore';
 import {
   Badge,
@@ -27,12 +27,10 @@ import {
 
 export default function SupervisorLoadPage() {
   const user = useAuthStore((s) => s.user);
-  const roles = useAuthStore((s) => s.roles);
+  const activeRole = useActiveRole();
   const addToast = useUiStore((s) => s.addToast);
 
-  const canOverride = roles.some((r) =>
-    [ROLES.UNIVERSITY_ADMIN, ROLES.COLLEGE_ADMIN].includes(r.role)
-  );
+  const canOverride = [ROLES.UNIVERSITY_ADMIN, ROLES.COLLEGE_ADMIN].includes(activeRole);
 
   const { data: collegesRes, isLoading: collegesLoading } = useCollegesQuery({ limit: 100 });
   const colleges = useMemo(() => collegesRes?.data || [], [collegesRes]);
@@ -58,7 +56,12 @@ export default function SupervisorLoadPage() {
     academicYearId,
     collegeId,
   });
-  const { data: projectsRes } = useProjectsQuery({ academicYearId, collegeId, limit: 100 });
+  // Wait until both filters resolve: the API rejects empty-string ids with
+  // a 400, so firing on first paint (before the effects set them) is noise.
+  const { data: projectsRes } = useProjectsQuery(
+    { academicYearId, collegeId, limit: 100 },
+    { enabled: Boolean(academicYearId && collegeId) }
+  );
   const assignMutation = useAssignSupervisionMutation();
 
   const [selectedProjectId, setSelectedProjectId] = useState('');

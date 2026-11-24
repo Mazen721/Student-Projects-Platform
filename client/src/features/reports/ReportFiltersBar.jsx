@@ -44,9 +44,9 @@ export function useReportFilterState() {
   const activeRoleId = useAuthStore((s) => s.activeRoleId);
   const activeAssignment =
     roles.find((r) => String(r._id) === String(activeRoleId)) || roles[0] || null;
-  const isUniversityAdmin = roles.some((r) => r.role === ROLES.UNIVERSITY_ADMIN);
-  const isAdmin = roles.some((r) =>
-    [ROLES.UNIVERSITY_ADMIN, ROLES.COLLEGE_ADMIN, ROLES.DEPARTMENT_ADMIN].includes(r.role)
+  const isUniversityAdmin = activeAssignment?.role === ROLES.UNIVERSITY_ADMIN;
+  const isAdmin = [ROLES.UNIVERSITY_ADMIN, ROLES.COLLEGE_ADMIN, ROLES.DEPARTMENT_ADMIN].includes(
+    activeAssignment?.role
   );
 
   const defaultCollegeId =
@@ -70,13 +70,13 @@ export function useReportFilterState() {
   const [freshNonce, setFreshNonce] = useState(0);
 
   const collegesQuery = useCollegesQuery({ limit: 100 });
-  const colleges = useMemo(() => collegesQuery.data?.items || [], [collegesQuery.data]);
+  const colleges = useMemo(() => collegesQuery.data?.data || [], [collegesQuery.data]);
 
   const yearSourceCollegeId = collegeId || colleges[0]?.id || colleges[0]?._id || '';
   const yearsQuery = useAcademicYearsQuery(yearSourceCollegeId);
   const years = useMemo(() => yearsQuery.data || [], [yearsQuery.data]);
   const departmentsQuery = useDepartmentsQuery(collegeId);
-  const departments = useMemo(() => departmentsQuery.data?.items || [], [departmentsQuery.data]);
+  const departments = useMemo(() => departmentsQuery.data?.data || [], [departmentsQuery.data]);
 
   useEffect(() => {
     if (years.length === 0) return;

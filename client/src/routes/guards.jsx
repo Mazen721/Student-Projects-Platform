@@ -1,6 +1,8 @@
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { ShieldAlert } from 'lucide-react';
+import ar from '@/locales/ar';
 import { useAuthStore } from '@/stores/authStore';
-import { CardSkeleton } from '@/components/ui';
+import { CardSkeleton, EmptyState } from '@/components/ui';
 
 export function RequireAuth({ allowTempPassword = false }) {
   const location = useLocation();
@@ -27,14 +29,38 @@ export function RequireAuth({ allowTempPassword = false }) {
   return <Outlet />;
 }
 
+export function RoleDeniedNotice() {
+  const navigate = useNavigate();
+  return (
+    <div className="mx-auto max-w-2xl py-8">
+      <EmptyState
+        icon={ShieldAlert}
+        title={ar.common.accessDeniedTitle}
+        description={ar.common.accessDeniedBody}
+        actionLabel={ar.nav.home}
+        onAction={() => navigate('/app')}
+      />
+    </div>
+  );
+}
+
 export function RequireRole({ allowedRoles = [] }) {
   const roles = useAuthStore((s) => s.roles);
+  const activeRoleId = useAuthStore((s) => s.activeRoleId);
+  // Gate on the ACTIVE role context — the same context the API authorizes
+  // against. Checking every assignment instead let multi-post users open
+  // pages whose data is scoped to another post, which rendered as empty
+  // screens; their other posts' pages unlock when they switch context.
+  const activeAssignment =
+    roles.find((r) => String(r._id) === String(activeRoleId)) || roles[0] || null;
   const hasRole =
     allowedRoles.length === 0 ||
-    roles.some((assignment) => allowedRoles.includes(assignment.role));
+    Boolean(activeAssignment && allowedRoles.includes(activeAssignment.role));
 
   if (!hasRole) {
-    return <Navigate to="/app" replace />;
+    // Explain instead of silently bouncing home: users used to land on the
+    // dashboard with no idea why the page they opened "did not work".
+    return <RoleDeniedNotice />;
   }
 
   return <Outlet />;
